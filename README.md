@@ -51,6 +51,21 @@ src/
 
 Plan completo en `/insyta/04-technical/architecture.md` (seccion "Repo 2: insyta-web").
 
+## Pre-commit hooks
+
+```bash
+# 1. Instalar pre-commit (una sola vez)
+pipx install pre-commit  # o: brew install pre-commit
+
+# 2. Activar hooks en este repo
+pre-commit install
+
+# 3. Correr todos los hooks contra el repo entero (opcional)
+pre-commit run --all-files
+```
+
+Los hooks corren prettier, eslint y `pnpm type-check` en cada commit.
+
 ## Convencion de commits
 
 ```
