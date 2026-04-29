@@ -83,10 +83,14 @@ export function UploadProgress({ uploadPublicId, onSettled, onReset }: Props) {
     <div className="space-y-3 rounded-md border bg-card p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 space-y-1">
-          <p className="truncate text-sm font-medium">{upload.filename}</p>
-          <p className="text-xs text-muted-foreground">
-            {formatBytes(upload.size_bytes)}
+          <p className="truncate text-sm font-medium">
+            {upload.filename ?? upload.public_id}
           </p>
+          {upload.size_bytes !== undefined ? (
+            <p className="text-xs text-muted-foreground">
+              {formatBytes(upload.size_bytes)}
+            </p>
+          ) : null}
         </div>
         <Badge variant={meta.badge} className="gap-1">
           <Icon

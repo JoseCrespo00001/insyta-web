@@ -16,49 +16,33 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { ErrorState } from "@/components/shared/error-state";
 import { CsvDropzone } from "@/app/(dashboard)/projects/[id]/upload/csv-dropzone";
 import { UploadProgress } from "@/app/(dashboard)/projects/[id]/upload/upload-progress";
 import { projectsApi, uploadsApi } from "@/lib/api/fetchers";
 import { queryKeys } from "@/lib/api/keys";
-import type { Platform, Upload } from "@/lib/api/schemas";
-
-const PLATFORMS: { value: Platform; label: string }[] = [
-  { value: "wati", label: "WATI" },
-  { value: "respond_io", label: "Respond.io" },
-  { value: "manychat", label: "Manychat" },
-  { value: "sdk", label: "SDK / Webhook" },
-];
+import type { Upload } from "@/lib/api/schemas";
 
 const MAX_BYTES = 50 * 1024 * 1024;
 
 /* UX Review — UploadView
  * User: Operador con un CSV de conversaciones que quiere evaluarlas.
  * Goal: Subir el archivo en <1 minuto y ver progreso hasta completar.
- * Flow: /projects/{id}/upload -> elegir agent + platform -> drop CSV -> POST -> ver progress polling -> redirect /projects/{id} al completar.
- * States: idle (sin file) | submitting (subiendo) | tracking (polling) | completed (toast + redirect) | failed (error message + retry).
+ * Flow: /projects/{id}/upload -> drop CSV -> POST -> ver progress polling -> redirect /projects/{id}.
+ * States: idle (sin file) | submitting | tracking (polling) | completed | failed.
  * Edge cases:
  *  - >50MB -> rechazado en cliente con mensaje claro.
  *  - !.csv -> rechazado.
- *  - Sin agents en el project -> empty state con link a configurar agente.
  *  - Polling se detiene cuando status in completed/failed.
- *  - Doble drop -> reemplaza el primer archivo (react-dropzone maxFiles=1).
- *  - Connection lost mid-upload -> toast con error.
- * Friction points: el form (agent + platform) esta ARRIBA del dropzone para no scrollear despues de soltar.
- * Benchmark: Vercel CSV import / Stripe data uploads.
+ *  - Doble drop -> reemplaza (react-dropzone maxFiles=1).
+ *
+ * Reconciliacion Wave 3B: el backend hoy SOLO acepta `project_public_id` +
+ * `file` en POST /api/v1/uploads/csv. No acepta agent_id ni platform aun
+ * (issue Linear: extender uploads/csv en Wave 4 para tomar agent_id y
+ * platform). Por eso el form simplificado a solo dropzone.
  */
 export function UploadView({ projectPublicId }: { projectPublicId: string }) {
   const router = useRouter();
-  const [agentId, setAgentId] = React.useState<string>("");
-  const [platform, setPlatform] = React.useState<Platform>("wati");
   const [activeUploadId, setActiveUploadId] = React.useState<string | null>(
     null,
   );
@@ -68,21 +52,8 @@ export function UploadView({ projectPublicId }: { projectPublicId: string }) {
     queryFn: () => projectsApi.get(projectPublicId),
   });
 
-  const agentsQuery = useQuery({
-    queryKey: queryKeys.projects.agents(projectPublicId),
-    queryFn: () => projectsApi.agents(projectPublicId),
-  });
-
-  React.useEffect(() => {
-    if (!agentId && agentsQuery.data?.items.length) {
-      setAgentId(agentsQuery.data.items[0].public_id);
-      setPlatform(agentsQuery.data.items[0].platform);
-    }
-  }, [agentId, agentsQuery.data]);
-
   const uploadMutation = useMutation({
-    mutationFn: (file: File) =>
-      uploadsApi.create(projectPublicId, { file, agentId, platform }),
+    mutationFn: (file: File) => uploadsApi.create(projectPublicId, { file }),
     onSuccess: (data) => {
       setActiveUploadId(data.public_id);
       toast.success("Archivo recibido. Procesando...");
@@ -97,10 +68,6 @@ export function UploadView({ projectPublicId }: { projectPublicId: string }) {
   });
 
   const handleFile = (file: File) => {
-    if (!agentId) {
-      toast.error("Elegi un agente antes de subir.");
-      return;
-    }
     uploadMutation.mutate(file);
   };
 
@@ -131,86 +98,26 @@ export function UploadView({ projectPublicId }: { projectPublicId: string }) {
           Subir conversaciones
         </h1>
         <p className="text-sm text-muted-foreground">
-          {projectQuery.data
+          {projectQuery.data?.name
             ? `Proyecto: ${projectQuery.data.name}`
             : "Subi un CSV con tus conversaciones para evaluarlas con IA."}
         </p>
       </header>
 
-      {agentsQuery.isLoading || projectQuery.isLoading ? (
+      {projectQuery.isLoading ? (
         <Skeleton className="h-64 w-full rounded-lg" />
-      ) : agentsQuery.isError || projectQuery.isError ? (
-        <ErrorState onRetry={() => void agentsQuery.refetch()} />
-      ) : !agentsQuery.data || agentsQuery.data.items.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              Falta configurar un agente
-            </CardTitle>
-            <CardDescription>
-              Antes de subir conversaciones necesitas crear el agente al que
-              pertenecen.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild>
-              <Link href={`/projects/${projectPublicId}/settings/agents`}>
-                Configurar agente
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+      ) : projectQuery.isError ? (
+        <ErrorState onRetry={() => void projectQuery.refetch()} />
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Datos del archivo</CardTitle>
+            <CardTitle className="text-base">Archivo CSV</CardTitle>
             <CardDescription>
-              Decinos a que agente pertenecen las conversaciones y de que
-              plataforma vienen.
+              Maximo 50 MB. Aceptamos solo .csv. Cada fila debe representar un
+              mensaje de la conversacion.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="agent">Agente</Label>
-                <Select
-                  value={agentId}
-                  onValueChange={setAgentId}
-                  disabled={uploadMutation.isPending || !!activeUploadId}
-                >
-                  <SelectTrigger id="agent">
-                    <SelectValue placeholder="Elegi un agente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {agentsQuery.data.items.map((a) => (
-                      <SelectItem key={a.public_id} value={a.public_id}>
-                        {a.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="platform">Plataforma origen</Label>
-                <Select
-                  value={platform}
-                  onValueChange={(v) => setPlatform(v as Platform)}
-                  disabled={uploadMutation.isPending || !!activeUploadId}
-                >
-                  <SelectTrigger id="platform">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PLATFORMS.map((p) => (
-                      <SelectItem key={p.value} value={p.value}>
-                        {p.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
             {activeUploadId ? (
               <UploadProgress
                 uploadPublicId={activeUploadId}

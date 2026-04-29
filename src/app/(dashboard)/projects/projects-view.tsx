@@ -96,10 +96,10 @@ export function ProjectsView() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 space-y-1">
                       <CardTitle className="truncate text-base">
-                        {project.name}
+                        {project.name ?? project.public_id}
                       </CardTitle>
                       <CardDescription className="truncate font-mono text-xs">
-                        {project.slug}
+                        {project.slug ?? project.public_id}
                       </CardDescription>
                     </div>
                     <ScoreBadge value={project.avg_score ?? null} />
@@ -114,18 +114,20 @@ export function ProjectsView() {
                   <div className="flex items-end justify-between">
                     <div className="space-y-0.5">
                       <p className="text-xs text-muted-foreground">
-                        Conversaciones
+                        Evaluaciones
                       </p>
                       <p className="text-sm font-medium tabular-nums">
-                        {project.conversations_count?.toLocaleString("es-AR") ??
+                        {project.evaluations_count?.toLocaleString("es-AR") ??
                           "0"}
                       </p>
                     </div>
                     <ScoreSparkline data={project.score_trend ?? []} />
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Creado {formatDate(project.created_at)}
-                  </p>
+                  {project.created_at ? (
+                    <p className="text-xs text-muted-foreground">
+                      Creado {formatDate(project.created_at)}
+                    </p>
+                  ) : null}
                 </CardContent>
               </Card>
             </Link>

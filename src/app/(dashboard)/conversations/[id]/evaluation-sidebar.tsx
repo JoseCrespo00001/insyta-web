@@ -29,11 +29,14 @@ const DIMENSIONS: Dimension[] = [
     key: "resolution",
     label: "Resolucion",
     hint: "Si la consulta del cliente fue resuelta antes de cerrar la conversacion.",
-    render: (e) => (
-      <Badge variant={e.resolution ? "success" : "destructive"}>
-        {e.resolution ? "Resuelta" : "Sin resolver"}
-      </Badge>
-    ),
+    render: (e) =>
+      e.resolution === null || e.resolution === undefined ? (
+        <Badge variant="secondary">—</Badge>
+      ) : (
+        <Badge variant={e.resolution ? "success" : "destructive"}>
+          {e.resolution ? "Resuelta" : "Sin resolver"}
+        </Badge>
+      ),
   },
   {
     key: "satisfaction",
@@ -41,7 +44,9 @@ const DIMENSIONS: Dimension[] = [
     hint: "Estimacion 1-5 en base al lenguaje del cliente al final del chat.",
     render: (e) => (
       <Badge variant="outline" className="tabular-nums">
-        {e.satisfaction.toFixed(1)} / 5
+        {e.satisfaction !== null && e.satisfaction !== undefined
+          ? `${e.satisfaction.toFixed(1)} / 5`
+          : "—"}
       </Badge>
     ),
   },
@@ -59,37 +64,43 @@ const DIMENSIONS: Dimension[] = [
               : "secondary"
         }
       >
-        {e.tone}
+        {e.tone ?? "—"}
       </Badge>
     ),
   },
   {
     key: "frustration",
     label: "Frustracion",
-    hint: "Si el cliente expreso frustracion en algun mensaje.",
-    render: (e) => (
-      <Badge variant={e.frustration ? "destructive" : "secondary"}>
-        {e.frustration ? "Detectada" : "No detectada"}
-      </Badge>
-    ),
+    hint: "Si el cliente expreso frustracion en algun mensaje. (Pendiente: backend aun no devuelve este campo.)",
+    render: (e) =>
+      e.frustration === undefined ? (
+        <Badge variant="secondary">—</Badge>
+      ) : (
+        <Badge variant={e.frustration ? "destructive" : "secondary"}>
+          {e.frustration ? "Detectada" : "No detectada"}
+        </Badge>
+      ),
   },
   {
     key: "escalated",
     label: "Escalado",
-    hint: "Si el cliente pidio hablar con un humano o el flujo lo derivo.",
-    render: (e) => (
-      <Badge variant={e.escalated ? "warning" : "secondary"}>
-        {e.escalated ? "Si" : "No"}
-      </Badge>
-    ),
+    hint: "Si el cliente pidio hablar con un humano o el flujo lo derivo. (Pendiente: backend aun no devuelve este campo.)",
+    render: (e) =>
+      e.escalated === undefined ? (
+        <Badge variant="secondary">—</Badge>
+      ) : (
+        <Badge variant={e.escalated ? "warning" : "secondary"}>
+          {e.escalated ? "Si" : "No"}
+        </Badge>
+      ),
   },
   {
     key: "efficiency",
     label: "Eficiencia",
-    hint: "Que tan eficiente fue el agente en mensajes/tiempo (1-5).",
+    hint: "Que tan eficiente fue el agente en mensajes/tiempo (1-5). (Pendiente: backend aun no devuelve este campo.)",
     render: (e) => (
       <Badge variant="outline" className="tabular-nums">
-        {e.efficiency} / 5
+        {e.efficiency !== undefined ? `${e.efficiency} / 5` : "—"}
       </Badge>
     ),
   },
@@ -128,7 +139,9 @@ export function EvaluationSidebar({
                 evaluation.score,
               )}`}
             >
-              {Math.round(evaluation.score)}
+              {evaluation.score !== null && evaluation.score !== undefined
+                ? Math.round(evaluation.score)
+                : "—"}
             </span>
             <span className="text-sm text-muted-foreground">/ 100</span>
           </div>
@@ -186,37 +199,51 @@ export function EvaluationSidebar({
         </Card>
       ) : null}
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Costo del LLM</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-2 gap-y-2 text-xs">
-            <dt className="text-muted-foreground">Modelo</dt>
-            <dd className="text-right font-mono">{evaluation.model_used}</dd>
-            <dt className="text-muted-foreground">Tokens</dt>
-            <dd className="text-right tabular-nums">
-              {evaluation.tokens_used.toLocaleString("es-AR")}
-            </dd>
-            <dt className="text-muted-foreground">Costo</dt>
-            <dd className="text-right tabular-nums">
-              {formatCurrency(evaluation.cost_usd)}
-            </dd>
-          </dl>
-          {evaluation.phoenix_span_id ? (
-            <Button asChild variant="outline" size="sm" className="mt-3 w-full">
-              <a
-                href={`${PHOENIX_ENDPOINT}/v1/traces/${evaluation.phoenix_span_id}`}
-                target="_blank"
-                rel="noreferrer noopener"
+      {evaluation.tokens_used !== undefined ||
+      evaluation.cost_usd !== undefined ||
+      evaluation.model_used !== undefined ||
+      evaluation.phoenix_span_id ? (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Costo del LLM</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid grid-cols-2 gap-y-2 text-xs">
+              <dt className="text-muted-foreground">Modelo</dt>
+              <dd className="text-right font-mono">
+                {evaluation.model_used ?? "—"}
+              </dd>
+              <dt className="text-muted-foreground">Tokens</dt>
+              <dd className="text-right tabular-nums">
+                {evaluation.tokens_used !== undefined
+                  ? evaluation.tokens_used.toLocaleString("es-AR")
+                  : "—"}
+              </dd>
+              <dt className="text-muted-foreground">Costo</dt>
+              <dd className="text-right tabular-nums">
+                {formatCurrency(evaluation.cost_usd)}
+              </dd>
+            </dl>
+            {evaluation.phoenix_span_id ? (
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="mt-3 w-full"
               >
-                <ExternalLink className="h-3.5 w-3.5" />
-                Ver en Phoenix
-              </a>
-            </Button>
-          ) : null}
-        </CardContent>
-      </Card>
+                <a
+                  href={`${PHOENIX_ENDPOINT}/v1/traces/${evaluation.phoenix_span_id}`}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Ver en Phoenix
+                </a>
+              </Button>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Tooltip>
         <TooltipTrigger asChild>

@@ -105,10 +105,11 @@ export function ProjectDetailView({
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">
-            {project.name}
+            {project.name ?? project.public_id}
           </h1>
           <p className="font-mono text-xs text-muted-foreground">
-            {project.public_id} · {project.slug}
+            {project.public_id}
+            {project.slug ? ` · ${project.slug}` : null}
           </p>
           {project.description ? (
             <p className="max-w-2xl text-sm text-muted-foreground">
@@ -173,7 +174,20 @@ export function ProjectDetailView({
         <>
           <ProjectScoreHeader metrics={metrics} />
 
+          {/* Breakdown deshabilitado hasta que backend extienda /score con
+              resolution_rate, avg_satisfaction, frustration_rate, escalation_rate
+              (Wave 4). Mostramos las cards con "—" para que el operador sepa
+              que esta planeado, pero no inventamos datos. */}
           <BreakdownCards metrics={metrics} />
+          {metrics.resolution_rate === null &&
+          metrics.avg_satisfaction === null &&
+          metrics.frustration_rate === null &&
+          metrics.escalation_rate === null ? (
+            <p className="text-xs text-muted-foreground">
+              El breakdown detallado se habilita cuando el backend exponga las
+              dimensiones (Wave 4).
+            </p>
+          ) : null}
 
           <div className="grid gap-4 lg:grid-cols-3">
             <Card className="lg:col-span-2">
