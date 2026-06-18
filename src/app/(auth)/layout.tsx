@@ -62,36 +62,27 @@ export default function AuthLayout({
         {/* Viñeta: oscurece izquierda para legibilidad del texto */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[hsl(215_100%_5%)]/60 via-transparent to-transparent" />
 
-        {/* Wordmark arriba */}
+        {/* Wordmark arriba (marca principal, más grande) */}
         <Link href="/" className="relative z-10 w-fit" aria-label="Insyta">
           <Image
             src="/logos/logo_wordmark_white.svg"
             alt="Insyta"
-            width={108}
-            height={36}
-            className="h-7 w-auto"
+            width={168}
+            height={56}
+            className="h-11 w-auto"
             unoptimized
             priority
           />
         </Link>
 
-        {/* Centro: logo grande con halo + headline */}
+        {/* Centro: headline + propuesta de valor */}
         <div className="relative z-10 flex flex-col items-start gap-8">
-          <div className="relative flex items-center justify-center">
-            <div className="halo-pulse absolute inset-0 -z-10 rounded-full bg-primary/40 blur-3xl" />
-            <Image
-              src="/logos/logo_verde.svg"
-              alt=""
-              width={176}
-              height={176}
-              className="h-44 w-44 drop-shadow-[0_0_40px_hsl(137_72%_66%/0.45)]"
-              unoptimized
-              priority
-            />
-          </div>
-
-          <div className="space-y-3">
-            <h1 className="text-3xl font-semibold leading-tight text-white">
+          <div className="space-y-4">
+            <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium uppercase tracking-wide text-primary ring-1 ring-primary/25">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              Para equipos que operan agentes en producción
+            </span>
+            <h1 className="text-4xl font-semibold leading-[1.1] text-white">
               Mejora continua para
               <br />
               tus agentes de IA
