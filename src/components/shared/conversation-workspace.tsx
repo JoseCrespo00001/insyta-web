@@ -268,13 +268,14 @@ export function ConversationWorkspace({
         </div>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-5 lg:items-start">
-        {/* Izquierda: chat (burbujas) — sticky para no perderlo al scrollear */}
-        <div className="lg:sticky lg:top-4 lg:col-span-2">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      {/* Dos paneles nivelados a la misma altura; cada uno scrollea aparte */}
+      <div className="grid gap-5 lg:h-[calc(100vh-13rem)] lg:grid-cols-5">
+        {/* Izquierda: chat (burbujas) */}
+        <div className="flex min-h-0 flex-col lg:col-span-2 lg:h-full">
+          <p className="mb-2 shrink-0 text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Chat · tocá un mensaje para analizarlo
           </p>
-          <div className="space-y-2.5 overflow-y-auto rounded-xl border bg-muted/20 p-3 lg:max-h-[calc(100vh-7rem)] lg:min-h-[34rem]">
+          <div className="max-h-[70vh] min-h-0 flex-1 space-y-2.5 overflow-y-auto rounded-xl border bg-muted/20 p-3 lg:max-h-none">
             {conversation.messages.map((m, i) => {
               const isUser = m.role === "user";
               const active = selected === i;
@@ -309,8 +310,8 @@ export function ConversationWorkspace({
           </div>
         </div>
 
-        {/* Derecha: análisis del mensaje + contexto + reporte */}
-        <div className="space-y-4 lg:col-span-3">
+        {/* Derecha: análisis + contexto + reporte (scrollea aparte) */}
+        <div className="space-y-4 lg:col-span-3 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pr-1">
           {selected !== null ? (
             <MessageAnalysis
               conversation={conversation}
