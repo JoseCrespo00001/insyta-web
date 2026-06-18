@@ -45,6 +45,14 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
     );
   }
 
+  function toggleGroup(groupId: string, selectAll: boolean) {
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.uploadGroupId === groupId ? { ...c, selected: selectAll } : c,
+      ),
+    );
+  }
+
   function createAudit(config: {
     flujoId: string;
     emphasis: string[];
@@ -116,6 +124,7 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
             onUploadCsv={uploadCsv}
             onToggle={toggleConversation}
             onToggleAll={toggleAllConversations}
+            onToggleGroup={toggleGroup}
           />
         </TabsContent>
 

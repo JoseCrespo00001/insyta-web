@@ -74,7 +74,7 @@ export const SAMPLE_FLUJOS: Flujo[] = [
 
 type RawConversation = Omit<
   Conversation,
-  "userMessages" | "botMessages" | "messages" | "evaluation"
+  "uploadGroupId" | "userMessages" | "botMessages" | "messages" | "evaluation"
 >;
 
 const RAW_CONVERSATIONS: RawConversation[] = [
@@ -286,11 +286,58 @@ function buildEvaluation(
   };
 }
 
+// ── Metadata de cada CSV cargado + rango de conversaciones que aporta ──
+// (el backend real las relaciona por upload_id; acá lo derivamos por índice)
+
+export type CsvGroupMeta = {
+  id: string;
+  projectName: string;
+  filename: string;
+  loadedAt: string; // ISO date de la carga
+  accent: string; // HSL triplet para identificar el CSV por color
+  range: readonly [number, number]; // [from, to) sobre RAW_CONVERSATIONS
+};
+
+export const CSV_GROUPS: CsvGroupMeta[] = [
+  {
+    id: "up_ventas_mayo",
+    projectName: "Bot Ventas 001",
+    filename: "conversaciones-mayo.csv",
+    loadedAt: "2026-05-28T16:20:00Z",
+    accent: "239 84% 67%", // indigo
+    range: [0, 6],
+  },
+  {
+    id: "up_ventas_junio",
+    projectName: "Bot Ventas 001",
+    filename: "conversaciones-junio.csv",
+    loadedAt: "2026-06-10T11:05:00Z",
+    accent: "271 81% 66%", // violeta
+    range: [6, 9],
+  },
+  {
+    id: "up_soporte_junio",
+    projectName: "Bot Soporte 24h",
+    filename: "soporte-junio.csv",
+    loadedAt: "2026-06-12T09:40:00Z",
+    accent: "32 95% 54%", // ámbar
+    range: [9, 12],
+  },
+];
+
+function groupIdForIndex(index: number): string {
+  const group = CSV_GROUPS.find(
+    ({ range }) => index >= range[0] && index < range[1],
+  );
+  return group?.id ?? CSV_GROUPS[0].id;
+}
+
 export const SAMPLE_CONVERSATIONS: Conversation[] = RAW_CONVERSATIONS.map(
   (c, index) => {
     const messages = buildMessages(c, index);
     return {
       ...c,
+      uploadGroupId: groupIdForIndex(index),
       messages,
       userMessages: messages.filter((m) => m.role === "user").length,
       botMessages: messages.filter((m) => m.role === "bot").length,
@@ -301,29 +348,13 @@ export const SAMPLE_CONVERSATIONS: Conversation[] = RAW_CONVERSATIONS.map(
 
 // ── Grupos de CSV cargados (vista /conversations) ──
 
-export const SAMPLE_UPLOAD_GROUPS: UploadGroup[] = [
-  {
-    id: "up_ventas_mayo",
-    projectName: "Bot Ventas 001",
-    filename: "conversaciones-mayo.csv",
-    loadedAt: "2026-05-28T16:20:00Z",
-    conversations: SAMPLE_CONVERSATIONS.slice(0, 6),
-  },
-  {
-    id: "up_ventas_junio",
-    projectName: "Bot Ventas 001",
-    filename: "conversaciones-junio.csv",
-    loadedAt: "2026-06-10T11:05:00Z",
-    conversations: SAMPLE_CONVERSATIONS.slice(6, 9),
-  },
-  {
-    id: "up_soporte_junio",
-    projectName: "Bot Soporte 24h",
-    filename: "soporte-junio.csv",
-    loadedAt: "2026-06-12T09:40:00Z",
-    conversations: SAMPLE_CONVERSATIONS.slice(9, 12),
-  },
-];
+export const SAMPLE_UPLOAD_GROUPS: UploadGroup[] = CSV_GROUPS.map((g) => ({
+  id: g.id,
+  projectName: g.projectName,
+  filename: g.filename,
+  loadedAt: g.loadedAt,
+  conversations: SAMPLE_CONVERSATIONS.slice(g.range[0], g.range[1]),
+}));
 
 // ── Énfasis para la auditoría ──
 

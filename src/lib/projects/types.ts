@@ -56,6 +56,7 @@ export type ConversationEvaluation = {
 
 export type Conversation = {
   id: string;
+  uploadGroupId: string; // CSV de origen (agrupa la carga)
   externalId: string; // número/identificador del chat
   contactName: string;
   preview: string; // primera línea / resumen corto
