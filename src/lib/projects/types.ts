@@ -69,6 +69,7 @@ export type Conversation = {
   resolved: boolean | null; // false = el agente no resolvió
   evaluation: ConversationEvaluation; // reporte detallado (lo medido + trace)
   selected: boolean; // para testear en la auditoría
+  pinned: boolean; // fijada por el usuario
 };
 
 /** Aspecto a enfatizar en la auditoría. */

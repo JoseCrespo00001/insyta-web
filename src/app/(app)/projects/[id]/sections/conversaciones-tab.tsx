@@ -5,6 +5,7 @@ import {
   FileText,
   Minus,
   MessagesSquare,
+  Pin,
   Search,
   Upload,
 } from "lucide-react";
@@ -83,17 +84,24 @@ export function ConversacionesTab({
   onToggle,
   onToggleAll,
   onToggleGroup,
+  onTogglePin,
+  onDeleteConversation,
 }: {
   conversations: Conversation[];
   onUploadCsv: () => void;
   onToggle: (id: string) => void;
   onToggleAll: (selectAll: boolean) => void;
   onToggleGroup: (groupId: string, selectAll: boolean) => void;
+  onTogglePin: (id: string) => void;
+  onDeleteConversation: (id: string) => void;
 }) {
   const [query, setQuery] = React.useState("");
-  const [viewing, setViewing] = React.useState<Conversation | null>(null);
+  const [viewingId, setViewingId] = React.useState<string | null>(null);
   const [collapsed, setCollapsed] = React.useState<Record<string, boolean>>({});
   const fileRef = React.useRef<HTMLInputElement>(null);
+
+  // Buscamos la conversación viva por id (refleja pin/delete en tiempo real).
+  const viewing = conversations.find((c) => c.id === viewingId) ?? null;
 
   function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
     if (!event.target.files?.[0]) return;
@@ -115,7 +123,9 @@ export function ConversacionesTab({
     return (
       <ConversationWorkspace
         conversation={viewing}
-        onBack={() => setViewing(null)}
+        onBack={() => setViewingId(null)}
+        onTogglePin={onTogglePin}
+        onDelete={onDeleteConversation}
       />
     );
   }
@@ -152,9 +162,16 @@ export function ConversacionesTab({
     c.preview.toLowerCase().includes(q);
 
   // Agrupar por CSV de origen, respetando el orden de CSV_GROUPS.
+  // Dentro de cada grupo, las fijadas van primero.
+  const byPinned = (a: Conversation, b: Conversation) =>
+    Number(b.pinned) - Number(a.pinned);
   const groups = CSV_GROUPS.map((meta) => {
     const all = conversations.filter((c) => c.uploadGroupId === meta.id);
-    return { meta, all, visible: all.filter(matches) };
+    return {
+      meta,
+      all,
+      visible: all.filter(matches).sort(byPinned),
+    };
   }).filter((g) => g.all.length > 0 && g.visible.length > 0);
 
   const selectedCount = conversations.filter((c) => c.selected).length;
@@ -286,10 +303,13 @@ export function ConversacionesTab({
                         />
                         <button
                           type="button"
-                          onClick={() => setViewing(c)}
+                          onClick={() => setViewingId(c.id)}
                           className="min-w-0 flex-1 text-left"
                         >
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            {c.pinned ? (
+                              <Pin className="h-3.5 w-3.5 shrink-0 text-primary" />
+                            ) : null}
                             <span className="font-medium">{c.contactName}</span>
                             <span className="text-xs text-muted-foreground">
                               #{c.externalId}

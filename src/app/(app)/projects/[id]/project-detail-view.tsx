@@ -53,6 +53,16 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
     );
   }
 
+  function togglePinConversation(id: string) {
+    setConversations((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c)),
+    );
+  }
+
+  function deleteConversation(id: string) {
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+  }
+
   function createAudit(config: {
     flujoId: string;
     emphasis: string[];
@@ -142,6 +152,8 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
             onToggle={toggleConversation}
             onToggleAll={toggleAllConversations}
             onToggleGroup={toggleGroup}
+            onTogglePin={togglePinConversation}
+            onDeleteConversation={deleteConversation}
           />
         </TabsContent>
 

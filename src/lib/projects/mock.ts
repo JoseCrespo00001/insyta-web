@@ -74,7 +74,12 @@ export const SAMPLE_FLUJOS: Flujo[] = [
 
 type RawConversation = Omit<
   Conversation,
-  "uploadGroupId" | "userMessages" | "botMessages" | "messages" | "evaluation"
+  | "uploadGroupId"
+  | "pinned"
+  | "userMessages"
+  | "botMessages"
+  | "messages"
+  | "evaluation"
 >;
 
 const RAW_CONVERSATIONS: RawConversation[] = [
@@ -338,6 +343,7 @@ export const SAMPLE_CONVERSATIONS: Conversation[] = RAW_CONVERSATIONS.map(
     return {
       ...c,
       uploadGroupId: groupIdForIndex(index),
+      pinned: false,
       messages,
       userMessages: messages.filter((m) => m.role === "user").length,
       botMessages: messages.filter((m) => m.role === "bot").length,
