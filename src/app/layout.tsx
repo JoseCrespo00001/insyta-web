@@ -21,6 +21,9 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description: t("description"),
     metadataBase: new URL("https://insyta.io"),
+    icons: {
+      icon: "/logos/logo_verde.svg",
+    },
   };
 }
 
