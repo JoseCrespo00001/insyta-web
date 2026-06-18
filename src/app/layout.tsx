@@ -1,27 +1,43 @@
 import type { Metadata } from "next";
+import { Urbanist } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 
 import { Providers } from "@/providers";
 import "@/styles/globals.css";
 
-export const metadata: Metadata = {
-  title: {
-    default: "Insyta — Mejora continua para agentes LLM",
-    template: "%s · Insyta",
-  },
-  description:
-    "Conecta tu agente, ve donde falla, y deja que nuestra IA lo mejore automaticamente.",
-  metadataBase: new URL("https://insyta.io"),
-};
+const urbanist = Urbanist({
+  subsets: ["latin"],
+  variable: "--font-urbanist",
+  display: "swap",
+});
 
-export default function RootLayout({
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("metadata");
+  return {
+    title: {
+      default: t("title"),
+      template: t("titleTemplate"),
+    },
+    description: t("description"),
+    metadataBase: new URL("https://insyta.io"),
+  };
+}
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="es" suppressHydrationWarning>
-      <body className="min-h-screen bg-background text-foreground antialiased">
-        <Providers>{children}</Providers>
+    <html lang={locale} className={urbanist.variable} suppressHydrationWarning>
+      <body className="min-h-screen bg-background text-foreground font-sans antialiased">
+        <NextIntlClientProvider messages={messages}>
+          <Providers>{children}</Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

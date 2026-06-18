@@ -1,0 +1,12 @@
+{
+  "metadata": {
+    "title": "Insyta — Continuous improvement for LLM agents",
+    "titleTemplate": "%s · Insyta",
+    "description": "Connect your agent, see where it fails, and let our AI improve it automatically."
+  },
+  "landing": {
+    "title": "Insyta",
+    "tagline": "The continuous-improvement layer for AI agents.",
+    "subtitle": "Connect your agent, see where it fails, and let our AI improve it automatically."
+  }
+}

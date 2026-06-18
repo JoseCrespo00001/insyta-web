@@ -46,6 +46,14 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        score: {
+          good: "hsl(var(--score-good))",
+          risk: "hsl(var(--score-risk))",
+          critical: "hsl(var(--score-critical))",
+        },
+      },
+      fontFamily: {
+        sans: ["var(--font-urbanist)", "system-ui", "sans-serif"],
       },
       borderRadius: {
         lg: "var(--radius)",
