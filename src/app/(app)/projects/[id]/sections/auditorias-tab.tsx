@@ -1,6 +1,7 @@
 import * as React from "react";
 import { ArrowLeft, ClipboardList, Play, Plus } from "lucide-react";
 
+import { ReportActions } from "./report-actions";
 import { ReportView } from "./report-view";
 import { ConversationWorkspace } from "@/components/shared/conversation-workspace";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,8 @@ export function AuditoriasTab({
   conversations,
   audits,
   onCreateAudit,
+  onArchiveAudit,
+  onDeleteAudit,
 }: {
   flujos: Flujo[];
   conversations: Conversation[];
@@ -48,6 +51,8 @@ export function AuditoriasTab({
     emphasis: string[];
     freeText: string;
   }) => void;
+  onArchiveAudit: (id: string) => void;
+  onDeleteAudit: (id: string) => void;
 }) {
   const selected = conversations.filter((c) => c.selected);
 
@@ -98,23 +103,43 @@ export function AuditoriasTab({
   if (viewing) {
     return (
       <div className="space-y-4">
-        <div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="-ml-2 mb-1 h-8 text-muted-foreground"
-            onClick={() => setViewing(null)}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Auditorías
-          </Button>
-          <h2 className="text-xl font-semibold tracking-tight">
-            {viewing.name}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {viewing.flujoName} · {viewing.conversationCount} conversaciones ·{" "}
-            {formatDateTime(viewing.createdAt)}
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="-ml-2 mb-1 h-8 text-muted-foreground"
+              onClick={() => setViewing(null)}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Auditorías
+            </Button>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-semibold tracking-tight">
+                {viewing.name}
+              </h2>
+              {viewing.status === "archived" ? (
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                  Archivada
+                </span>
+              ) : null}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {viewing.flujoName} · {viewing.conversationCount} conversaciones ·{" "}
+              {formatDateTime(viewing.createdAt)}
+            </p>
+          </div>
+          <ReportActions
+            audit={viewing}
+            onArchive={(id) => {
+              onArchiveAudit(id);
+              setViewing(null);
+            }}
+            onDelete={(id) => {
+              onDeleteAudit(id);
+              setViewing(null);
+            }}
+          />
         </div>
         <ReportView
           report={viewing.report}
@@ -251,7 +276,14 @@ export function AuditoriasTab({
           {audits.map((a) => (
             <Card key={a.id}>
               <CardHeader>
-                <CardTitle className="text-base">{a.name}</CardTitle>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  {a.name}
+                  {a.status === "archived" ? (
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
+                      Archivada
+                    </span>
+                  ) : null}
+                </CardTitle>
                 <CardDescription>
                   {a.flujoName} · {a.conversationCount} conversaciones ·{" "}
                   {formatDateTime(a.createdAt)}

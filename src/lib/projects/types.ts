@@ -115,6 +115,7 @@ export type Report = {
   total: number;
   satisfaction: Record<Satisfaction, number>;
   failing: Conversation[]; // conversaciones donde el agente no resolvió
+  conversations: Conversation[]; // todas las auditadas (para métricas agregadas)
   suggestions: Suggestion[];
 };
 
@@ -145,5 +146,6 @@ export type Audit = {
   emphasis: string[]; // keys de EmphasisOption
   freeText: string;
   createdAt: string; // ISO
+  status: "active" | "archived";
   report: Report;
 };

@@ -70,9 +70,24 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
       emphasis: config.emphasis,
       freeText: config.freeText,
       createdAt: now,
+      status: "active",
       report: buildReport(selected),
     };
     setAudits((prev) => [audit, ...prev]);
+  }
+
+  function archiveAudit(id: string) {
+    setAudits((prev) =>
+      prev.map((a) =>
+        a.id === id
+          ? { ...a, status: a.status === "archived" ? "active" : "archived" }
+          : a,
+      ),
+    );
+  }
+
+  function deleteAudit(id: string) {
+    setAudits((prev) => prev.filter((a) => a.id !== id));
   }
 
   return (
@@ -108,6 +123,8 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
             flujos={flujos}
             conversations={conversations}
             audits={audits}
+            onArchiveAudit={archiveAudit}
+            onDeleteAudit={deleteAudit}
           />
         </TabsContent>
 
@@ -134,6 +151,8 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
             conversations={conversations}
             audits={audits}
             onCreateAudit={createAudit}
+            onArchiveAudit={archiveAudit}
+            onDeleteAudit={deleteAudit}
           />
         </TabsContent>
       </Tabs>

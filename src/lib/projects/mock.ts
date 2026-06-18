@@ -304,7 +304,7 @@ export const CSV_GROUPS: CsvGroupMeta[] = [
     projectName: "Bot Ventas 001",
     filename: "conversaciones-mayo.csv",
     loadedAt: "2026-05-28T16:20:00Z",
-    accent: "239 84% 67%", // indigo
+    accent: "137 72% 66%", // verde de marca
     range: [0, 6],
   },
   {
@@ -312,7 +312,7 @@ export const CSV_GROUPS: CsvGroupMeta[] = [
     projectName: "Bot Ventas 001",
     filename: "conversaciones-junio.csv",
     loadedAt: "2026-06-10T11:05:00Z",
-    accent: "271 81% 66%", // violeta
+    accent: "165 58% 45%", // teal (familia verde)
     range: [6, 9],
   },
   {
@@ -320,7 +320,7 @@ export const CSV_GROUPS: CsvGroupMeta[] = [
     projectName: "Bot Soporte 24h",
     filename: "soporte-junio.csv",
     loadedAt: "2026-06-12T09:40:00Z",
-    accent: "32 95% 54%", // ámbar
+    accent: "210 55% 52%", // azul charcoal aclarado (familia 215)
     range: [9, 12],
   },
 ];
@@ -406,6 +406,7 @@ export function buildReport(conversations: Conversation[]): Report {
     total: conversations.length,
     satisfaction,
     failing: conversations.filter((c) => c.resolved === false),
+    conversations,
     suggestions: SAMPLE_SUGGESTIONS,
   };
 }
@@ -422,6 +423,7 @@ export const SAMPLE_AUDITS: Audit[] = [
     emphasis: ["resolucion", "frustracion"],
     freeText: "Foco en por qué se pierden ventas en checkout.",
     createdAt: "2026-05-28T17:00:00Z",
+    status: "active",
     report: buildReport(SAMPLE_CONVERSATIONS),
   },
 ];
