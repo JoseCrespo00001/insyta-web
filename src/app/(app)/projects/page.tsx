@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { ProjectsView } from "@/app/(dashboard)/projects/projects-view";
+import { ProjectsView } from "./projects-view";
 
 export const metadata: Metadata = {
   title: "Proyectos",
