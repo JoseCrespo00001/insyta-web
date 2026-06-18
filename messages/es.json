@@ -1,8 +1,182 @@
 {
   "metadata": {
-    "title": "Insyta ",
+    "title": "Insyta — El supervisor de tus agentes de IA",
     "titleTemplate": "%s · Insyta",
     "description": "Conecta tu agente, ve dónde falla, y deja que nuestra IA lo mejore automáticamente."
+  },
+  "nav": {
+    "howItWorks": "Cómo funciona",
+    "features": "Producto",
+    "integrations": "Integraciones",
+    "useCases": "Casos",
+    "faq": "FAQ",
+    "login": "Ingresar",
+    "cta": "Empezar",
+    "toggleTheme": "Cambiar tema",
+    "openMenu": "Abrir menú"
+  },
+  "hero": {
+    "badge": "Mejora continua para agentes de IA",
+    "title": "El supervisor que tu agente de IA necesita",
+    "subtitle": "Insyta conecta tu agente, evalúa cada conversación, detecta dónde falla y propone mejoras al prompt que se verifican solas.",
+    "ctaPrimary": "Empezar",
+    "ctaSecondary": "Ver cómo funciona",
+    "trust": "Sin código · Conecta en 5 minutos · WhatsApp, WATI, Respond.io y SDK",
+    "card": {
+      "label": "Conversación evaluada",
+      "id": "conv_8f3a · tracking de pedido",
+      "score": "Score",
+      "resolution": "Resolución",
+      "resolutionValue": "Parcial",
+      "satisfaction": "Satisfacción",
+      "satisfactionValue": "2 / 5",
+      "frustration": "Frustración",
+      "frustrationValue": "Alta",
+      "patternLabel": "Patrón detectado",
+      "pattern": "Tracking de pedido + frustración — score 31% bajo el baseline",
+      "improvementLabel": "Mejora propuesta",
+      "improvement": "Pedir nº de pedido antes de escalar y dar un ETA concreto.",
+      "delta": "+18 pts verificado a 14 días"
+    }
+  },
+  "howItWorks": {
+    "eyebrow": "Cómo funciona",
+    "title": "Un loop cerrado que mejora a tu agente cada semana",
+    "subtitle": "No es analytics ni observabilidad. Es el entrenador que supervisa, corrige y mide a tu agente.",
+    "steps": [
+      {
+        "step": "01",
+        "title": "Conecta tu agente",
+        "description": "WhatsApp, WATI, Respond.io o nuestro SDK. Sin tocar tu bot, en minutos."
+      },
+      {
+        "step": "02",
+        "title": "Evaluamos cada conversación",
+        "description": "Un LLM-as-judge puntúa resolución, satisfacción, tono y frustración. De 0 a 100."
+      },
+      {
+        "step": "03",
+        "title": "Detectamos patrones de fallo",
+        "description": "Agrupamos las conversaciones malas por tema y dimensión para ver dónde se rompe."
+      },
+      {
+        "step": "04",
+        "title": "Mejoramos y medimos",
+        "description": "Proponemos cambios al prompt y verificamos el impacto con el delta de score a 14 días."
+      }
+    ]
+  },
+  "features": {
+    "eyebrow": "Producto",
+    "title": "Todo lo que necesitás para que tu bot venda más y frustre menos",
+    "items": [
+      {
+        "title": "LLM-as-judge",
+        "description": "Cada chat puntuado con criterio objetivo: score 0–100 sobre 10 dimensiones de calidad."
+      },
+      {
+        "title": "Optimization Loop",
+        "description": "Detecta, propone y mide. El único loop de mejora cerrado del mercado."
+      },
+      {
+        "title": "Patrones de fallo",
+        "description": "Clusters por tema y dimensión, como “tracking de pedido + frustración”, priorizados por impacto."
+      },
+      {
+        "title": "Alertas inteligentes",
+        "description": "Te avisamos cuando el score cae, sube la frustración o aparece un tema nuevo."
+      },
+      {
+        "title": "PII-safe por diseño",
+        "description": "Anonimizamos los datos sensibles antes de que el texto toque cualquier LLM."
+      },
+      {
+        "title": "Multi-agente y agencias",
+        "description": "Un solo panel para todos tus bots, proyectos y clientes, con aislamiento por organización."
+      }
+    ]
+  },
+  "integrations": {
+    "eyebrow": "Integraciones",
+    "title": "Conecta en 5 minutos, sin tocar tu bot",
+    "subtitle": "Insyta vive sobre tu stack actual. Trae tus conversaciones desde donde ya las tenés.",
+    "items": [
+      { "name": "WhatsApp", "tag": "Plug-and-play" },
+      { "name": "WATI", "tag": "Sin código" },
+      { "name": "Respond.io", "tag": "Sin código" },
+      { "name": "Manychat", "tag": "Webhook" },
+      { "name": "Custom SDK", "tag": "Node · Python" }
+    ]
+  },
+  "useCases": {
+    "eyebrow": "Casos",
+    "title": "Aplica a cualquier agente, en cualquier industria",
+    "subtitle": "Si tu agente conversa con clientes, Insyta encuentra dónde te está costando plata.",
+    "items": [
+      {
+        "industry": "Ecommerce",
+        "pain": "“¿Dónde está mi pedido?”, devoluciones confusas y recomendaciones que no convierten."
+      },
+      {
+        "industry": "Salud",
+        "pain": "Respuestas de riesgo a síntomas, agendamiento que falla e info de seguros poco clara."
+      },
+      {
+        "industry": "Fintech",
+        "pain": "Consultas de saldo que fallan, reclamos sin resolver y tasas desactualizadas."
+      },
+      {
+        "industry": "Cobranza",
+        "pain": "Deudores que se van porque el agente no supo manejar la objeción “no tengo plata”."
+      },
+      {
+        "industry": "Ventas consultivas",
+        "pain": "Leads fríos que llegan al closer y queman horas en reuniones inútiles."
+      },
+      {
+        "industry": "Logística",
+        "pain": "Entregas reprogramadas mal porque el agente no validó la zona de cobertura."
+      }
+    ]
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "Preguntas frecuentes",
+    "items": [
+      {
+        "q": "¿Insyta reemplaza mi chatbot?",
+        "a": "No. Insyta es la capa de mejora que vive sobre tu bot actual. No vendemos chatbots: supervisamos y mejoramos el que ya tenés."
+      },
+      {
+        "q": "¿Necesito programar para empezar?",
+        "a": "No para WhatsApp, WATI o Respond.io: la conexión es plug-and-play. El SDK (Node y Python) es solo para integraciones custom."
+      },
+      {
+        "q": "¿Mis datos están seguros?",
+        "a": "Sí. Anonimizamos los datos sensibles (PII) antes de que el texto llegue a cualquier LLM, y cada query corre con aislamiento multi-tenant a nivel de base de datos."
+      },
+      {
+        "q": "¿Cuánto cuesta evaluar conversaciones?",
+        "a": "Centavos por conversación. Usamos Claude Haiku con caching, lo que hace viable analizar millones de chats sin que el costo se dispare."
+      },
+      {
+        "q": "¿En cuánto tiempo veo resultados?",
+        "a": "Las primeras evaluaciones aparecen al instante. El primer ciclo de mejora se genera en una semana y su impacto se verifica con el delta de score a los 14 días."
+      }
+    ]
+  },
+  "cta": {
+    "title": "Dejá de volar a ciegas",
+    "subtitle": "Conectá tu agente y descubrí hoy dónde está fallando — y cuánto te está costando.",
+    "primary": "Empezar",
+    "secondary": "Ver cómo funciona"
+  },
+  "footer": {
+    "tagline": "El supervisor de tus agentes de IA. Detecta dónde fallan, propone mejoras y mide el impacto.",
+    "productHeading": "Producto",
+    "companyHeading": "Recursos",
+    "rights": "Todos los derechos reservados.",
+    "madeWith": "Hecho para que tu agente sea el mejor."
   },
   "landing": {
     "title": "Insyta",
