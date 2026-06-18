@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   MessageSquare,
   Moon,
+  Radio,
   Sparkles,
   Sun,
 } from "lucide-react";
@@ -23,6 +24,7 @@ const NAV = [
   { href: "/projects", label: "Proyectos", icon: FolderKanban },
   { href: "/conversations", label: "Conversaciones", icon: MessageSquare },
   { href: "/improvements", label: "Mejoras", icon: Sparkles },
+  { href: "/supervisor", label: "Supervisor", icon: Radio },
 ] as const;
 
 // Estilo "isla": contenedor flotante redondeado, sin barra de fondo ni borde inferior.

@@ -6,7 +6,9 @@ import type {
   EmphasisOption,
   Flujo,
   FlujoImprovement,
+  FlujoRun,
   Report,
+  RunStep,
   Satisfaction,
   Suggestion,
   UploadGroup,
@@ -426,6 +428,104 @@ export const FLUJO_IMPROVEMENTS: FlujoImprovement[] = [
     conversations: convsById("c12"),
   },
 ];
+
+// ── Playground: correr el flujo con mensajes inventados ──
+
+export const TEST_CASES = [
+  {
+    id: "t1",
+    label: "Tracking de pedido",
+    message: "Hola, ¿dónde está mi pedido?",
+  },
+  {
+    id: "t2",
+    label: "Compra",
+    message: "Quiero comprar la remera negra talle L",
+  },
+  {
+    id: "t3",
+    label: "Pago fallido",
+    message: "No puedo pagar, me da error en la tarjeta",
+  },
+  {
+    id: "t4",
+    label: "Devolución",
+    message: "Quiero devolver un producto que compré",
+  },
+  {
+    id: "t5",
+    label: "Reclamo",
+    message: "El producto vino fallado, ¿qué hago?",
+  },
+] as const;
+
+function cap(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** Mock: corre el flujo sobre un mensaje y devuelve los pasos que dio. */
+export function runFlujo(message: string): FlujoRun {
+  const t = message.toLowerCase();
+
+  // Routing por keywords + qué rutas fallan (los "problemas").
+  let route = "ventas";
+  let resolved = true;
+  let response = "Te ayudo con eso ahora mismo.";
+
+  if (/pedido|tracking|d[oó]nde est[aá]/.test(t)) {
+    route = "soporte";
+    resolved = false;
+    response = "Para eso contactá a soporte.";
+  } else if (/comprar|precio|talle|remera|producto/.test(t)) {
+    route = "ventas";
+    response = "¡Genial! Te paso el link de pago de MercadoPago.";
+  } else if (/pagar|pago|tarjeta|mercadopago|cobr/.test(t)) {
+    route = "pagos";
+    response = "Reintentá el pago con este link nuevo.";
+  } else if (/devolver|devoluci[oó]n|reembolso|cambio/.test(t)) {
+    route = "soporte";
+    resolved = false;
+    response = "Contactá a soporte para devoluciones.";
+  } else if (/reclamo|fallado|roto|defect/.test(t)) {
+    route = "soporte";
+    resolved = false;
+    response = "No estoy seguro, contactá a soporte.";
+  }
+
+  const steps: RunStep[] = [
+    {
+      node: "Chat Input",
+      detail: `Recibe el mensaje del usuario`,
+      status: "ok",
+    },
+    {
+      node: "Supervisor · router",
+      detail: `Clasifica el tema y rutea al agente "${route}"`,
+      status: "ok",
+    },
+    {
+      node: `Agente ${cap(route)}`,
+      detail: resolved
+        ? "Resuelve la consulta con sus tools."
+        : "Deriva a 'soporte' sin resolver (loop / fuera de scope).",
+      status: resolved ? "ok" : "warning",
+    },
+    {
+      node: "Response",
+      detail: `Responde: "${response}"`,
+      status: resolved ? "ok" : "warning",
+    },
+  ];
+
+  return {
+    input: message,
+    route,
+    steps,
+    resolved,
+    response,
+    predictedSatisfaction: resolved ? "satisfecho" : "insatisfecho",
+  };
+}
 
 // ── Generadores de id (cliente) ──
 

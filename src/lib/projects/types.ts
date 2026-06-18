@@ -83,6 +83,23 @@ export type Suggestion = {
   impact: string; // ej: "+12% satisfacción estimada"
 };
 
+/** Un paso de la ejecución del flujo (al probarlo). */
+export type RunStep = {
+  node: string; // "Chat Input", "Supervisor · router", "Agente Ventas", "Response"
+  detail: string;
+  status: "ok" | "warning" | "error";
+};
+
+/** Resultado de correr el flujo sobre un mensaje de prueba. */
+export type FlujoRun = {
+  input: string;
+  route: string;
+  steps: RunStep[];
+  resolved: boolean;
+  response: string;
+  predictedSatisfaction: Satisfaction;
+};
+
 /** Mejora de un flujo con su justificación y las conversaciones que la motivaron. */
 export type FlujoImprovement = {
   title: string;

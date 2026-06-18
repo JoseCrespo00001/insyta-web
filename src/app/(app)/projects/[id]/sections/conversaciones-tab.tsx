@@ -1,19 +1,12 @@
 import * as React from "react";
 import { MessagesSquare, Search, Upload } from "lucide-react";
 
-import { ConversationDetailBody } from "@/components/shared/conversation-detail-body";
+import { ConversationWorkspace } from "@/components/shared/conversation-workspace";
 import { ScoreBadge } from "@/components/shared/score-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import type { Conversation, Satisfaction } from "@/lib/projects/types";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +60,15 @@ export function ConversacionesTab({
       onChange={handleFile}
     />
   );
+
+  if (viewing) {
+    return (
+      <ConversationWorkspace
+        conversation={viewing}
+        onBack={() => setViewing(null)}
+      />
+    );
+  }
 
   if (conversations.length === 0) {
     return (
@@ -184,22 +186,6 @@ export function ConversacionesTab({
           ))}
         </div>
       )}
-
-      {/* Chat transcript */}
-      <Sheet
-        open={!!viewing}
-        onOpenChange={(open) => !open && setViewing(null)}
-      >
-        <SheetContent side="right" className="flex w-full flex-col sm:max-w-lg">
-          <SheetHeader>
-            <SheetTitle>{viewing?.contactName}</SheetTitle>
-            <SheetDescription>
-              #{viewing?.externalId} · {viewing?.messageCount} mensajes
-            </SheetDescription>
-          </SheetHeader>
-          {viewing ? <ConversationDetailBody conversation={viewing} /> : null}
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }

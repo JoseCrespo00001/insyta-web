@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Eye, Upload, Workflow } from "lucide-react";
+import { ArrowLeft, Eye, Upload, Workflow } from "lucide-react";
 
 import { FlujoGraph } from "./flujo-graph";
 import { Button } from "@/components/ui/button";
@@ -11,14 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatBytes, formatDate } from "@/lib/format";
 import { makeFlujoId } from "@/lib/projects/mock";
@@ -32,6 +24,7 @@ export function FlujosTab({
   onAddFlujo: (flujo: Flujo) => void;
 }) {
   const fileRef = React.useRef<HTMLInputElement>(null);
+  const [viewing, setViewing] = React.useState<Flujo | null>(null);
 
   function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -47,6 +40,46 @@ export function FlujosTab({
       json: "// El backend procesará este flujo.\n// (mock: el contenido no se parsea en el front)",
     });
     event.target.value = "";
+  }
+
+  // Vista dedicada: flujo (grafo / JSON), full-width.
+  if (viewing) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="-ml-2 mb-1 h-8 text-muted-foreground"
+            onClick={() => setViewing(null)}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Flujos
+          </Button>
+          <h2 className="text-xl font-semibold tracking-tight">
+            {viewing.name}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            v{viewing.version} · {viewing.agentCount} agentes ·{" "}
+            {formatBytes(viewing.sizeBytes)} · {formatDate(viewing.createdAt)}
+          </p>
+        </div>
+        <Tabs defaultValue="grafo" className="space-y-3">
+          <TabsList>
+            <TabsTrigger value="grafo">Grafo</TabsTrigger>
+            <TabsTrigger value="json">JSON</TabsTrigger>
+          </TabsList>
+          <TabsContent value="grafo">
+            <FlujoGraph flujo={viewing} />
+          </TabsContent>
+          <TabsContent value="json">
+            <pre className="max-h-[72vh] overflow-auto rounded-md bg-muted p-4 text-xs leading-relaxed">
+              {viewing.json}
+            </pre>
+          </TabsContent>
+        </Tabs>
+      </div>
+    );
   }
 
   return (
@@ -98,37 +131,14 @@ export function FlujosTab({
               </CardHeader>
               <CardContent />
               <CardFooter>
-                <Sheet>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Eye className="h-4 w-4" />
-                      Ver flujo
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="right" className="w-full sm:max-w-3xl">
-                    <SheetHeader>
-                      <SheetTitle>{flujo.name}</SheetTitle>
-                      <SheetDescription>
-                        v{flujo.version} · {flujo.agentCount} agentes ·{" "}
-                        {formatBytes(flujo.sizeBytes)}
-                      </SheetDescription>
-                    </SheetHeader>
-                    <Tabs defaultValue="grafo" className="mt-4 space-y-3">
-                      <TabsList>
-                        <TabsTrigger value="grafo">Grafo</TabsTrigger>
-                        <TabsTrigger value="json">JSON</TabsTrigger>
-                      </TabsList>
-                      <TabsContent value="grafo">
-                        <FlujoGraph flujo={flujo} />
-                      </TabsContent>
-                      <TabsContent value="json">
-                        <pre className="max-h-[70vh] overflow-auto rounded-md bg-muted p-4 text-xs leading-relaxed">
-                          {flujo.json}
-                        </pre>
-                      </TabsContent>
-                    </Tabs>
-                  </SheetContent>
-                </Sheet>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setViewing(flujo)}
+                >
+                  <Eye className="h-4 w-4" />
+                  Ver flujo
+                </Button>
               </CardFooter>
             </Card>
           ))}

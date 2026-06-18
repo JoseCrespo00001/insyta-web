@@ -9,18 +9,11 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { ConversationDetailBody } from "@/components/shared/conversation-detail-body";
+import { ConversationWorkspace } from "@/components/shared/conversation-workspace";
 import { ScoreBadge } from "@/components/shared/score-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import {
   Table,
   TableBody,
@@ -110,6 +103,15 @@ export function ConversationsView() {
     const arr = byProject.get(g.projectName) ?? [];
     arr.push(g);
     byProject.set(g.projectName, arr);
+  }
+
+  if (viewing) {
+    return (
+      <ConversationWorkspace
+        conversation={viewing}
+        onBack={() => setViewing(null)}
+      />
+    );
   }
 
   return (
@@ -232,19 +234,6 @@ export function ConversationsView() {
           </section>
         ))
       )}
-
-      {/* Chat con horarios */}
-      <Sheet open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
-        <SheetContent side="right" className="flex w-full flex-col sm:max-w-lg">
-          <SheetHeader>
-            <SheetTitle>{viewing?.contactName}</SheetTitle>
-            <SheetDescription>
-              #{viewing?.externalId} · {viewing?.messageCount} mensajes
-            </SheetDescription>
-          </SheetHeader>
-          {viewing ? <ConversationDetailBody conversation={viewing} /> : null}
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }

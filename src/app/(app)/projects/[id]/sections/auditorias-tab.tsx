@@ -1,7 +1,8 @@
 import * as React from "react";
-import { ClipboardList, Play, Plus } from "lucide-react";
+import { ArrowLeft, ClipboardList, Play, Plus } from "lucide-react";
 
 import { ReportView } from "./report-view";
+import { ConversationWorkspace } from "@/components/shared/conversation-workspace";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -27,13 +28,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDateTime } from "@/lib/format";
 import { EMPHASIS_OPTIONS } from "@/lib/projects/mock";
@@ -62,6 +56,9 @@ export function AuditoriasTab({
   const [emphasis, setEmphasis] = React.useState<string[]>([]);
   const [freeText, setFreeText] = React.useState("");
   const [viewing, setViewing] = React.useState<Audit | null>(null);
+  const [viewingConv, setViewingConv] = React.useState<Conversation | null>(
+    null,
+  );
 
   function toggleEmphasis(key: string) {
     setEmphasis((prev) =>
@@ -85,6 +82,46 @@ export function AuditoriasTab({
     setEmphasis([]);
     setFreeText("");
     setOpen(false);
+  }
+
+  // Vista dedicada: conversación (desde una fallida del reporte).
+  if (viewingConv) {
+    return (
+      <ConversationWorkspace
+        conversation={viewingConv}
+        onBack={() => setViewingConv(null)}
+      />
+    );
+  }
+
+  // Vista dedicada: reporte de la auditoría (full-width).
+  if (viewing) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="-ml-2 mb-1 h-8 text-muted-foreground"
+            onClick={() => setViewing(null)}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Auditorías
+          </Button>
+          <h2 className="text-xl font-semibold tracking-tight">
+            {viewing.name}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {viewing.flujoName} · {viewing.conversationCount} conversaciones ·{" "}
+            {formatDateTime(viewing.createdAt)}
+          </p>
+        </div>
+        <ReportView
+          report={viewing.report}
+          onSelectConversation={setViewingConv}
+        />
+      </div>
+    );
   }
 
   return (
@@ -237,24 +274,6 @@ export function AuditoriasTab({
           ))}
         </div>
       )}
-
-      {/* Reporte */}
-      <Sheet open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
-        <SheetContent
-          side="right"
-          className="w-full overflow-y-auto sm:max-w-2xl"
-        >
-          <SheetHeader>
-            <SheetTitle>{viewing?.name}</SheetTitle>
-            <SheetDescription>
-              {viewing?.flujoName} · {viewing?.conversationCount} conversaciones
-            </SheetDescription>
-          </SheetHeader>
-          <div className="mt-4">
-            {viewing ? <ReportView report={viewing.report} /> : null}
-          </div>
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }

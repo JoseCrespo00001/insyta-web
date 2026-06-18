@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { Report, Satisfaction } from "@/lib/projects/types";
+import type { Conversation, Report, Satisfaction } from "@/lib/projects/types";
 import { cn } from "@/lib/utils";
 
 const SAT_META: Record<Satisfaction, { label: string; bar: string }> = {
@@ -19,7 +19,13 @@ const SAT_META: Record<Satisfaction, { label: string; bar: string }> = {
 
 const SAT_ORDER: Satisfaction[] = ["satisfecho", "neutral", "insatisfecho"];
 
-export function ReportView({ report }: { report: Report }) {
+export function ReportView({
+  report,
+  onSelectConversation,
+}: {
+  report: Report;
+  onSelectConversation?: (conversation: Conversation) => void;
+}) {
   return (
     <div className="space-y-6">
       {/* Breakdown de satisfacción */}
@@ -66,9 +72,15 @@ export function ReportView({ report }: { report: Report }) {
         ) : (
           <div className="space-y-2">
             {report.failing.map((c) => (
-              <div
+              <button
                 key={c.id}
-                className="flex items-center gap-3 rounded-md border p-3"
+                type="button"
+                disabled={!onSelectConversation}
+                onClick={() => onSelectConversation?.(c)}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-md border p-3 text-left",
+                  onSelectConversation && "transition-colors hover:bg-muted",
+                )}
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -82,7 +94,7 @@ export function ReportView({ report }: { report: Report }) {
                   </p>
                 </div>
                 <ScoreBadge score={c.score} />
-              </div>
+              </button>
             ))}
           </div>
         )}

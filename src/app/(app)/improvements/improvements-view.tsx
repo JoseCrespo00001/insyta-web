@@ -3,7 +3,8 @@
 import * as React from "react";
 import { Loader2, Sparkles, Workflow } from "lucide-react";
 
-import { ConversationDetailBody } from "@/components/shared/conversation-detail-body";
+import { FlujoPlayground } from "./flujo-playground";
+import { ConversationWorkspace } from "@/components/shared/conversation-workspace";
 import { ScoreBadge } from "@/components/shared/score-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,13 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { FLUJO_IMPROVEMENTS, SAMPLE_FLUJOS } from "@/lib/projects/mock";
 import type { Conversation, FlujoImprovement } from "@/lib/projects/types";
 import { cn } from "@/lib/utils";
@@ -52,6 +46,15 @@ export function ImprovementsView() {
   }
 
   const selectedFlujo = SAMPLE_FLUJOS.find((f) => f.id === flujoId);
+
+  if (viewing) {
+    return (
+      <ConversationWorkspace
+        conversation={viewing}
+        onBack={() => setViewing(null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -88,7 +91,12 @@ export function ImprovementsView() {
         ))}
       </div>
 
-      {/* Acción / estado */}
+      {/* Probar el flujo (playground) */}
+      {selectedFlujo ? (
+        <FlujoPlayground flujoName={selectedFlujo.name} />
+      ) : null}
+
+      {/* Sugerencias de mejora */}
       {!flujoId ? (
         <Card>
           <CardContent className="py-12 text-center text-sm text-muted-foreground">
@@ -169,19 +177,6 @@ export function ImprovementsView() {
           ))}
         </div>
       )}
-
-      {/* Detalle de conversación */}
-      <Sheet open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
-        <SheetContent side="right" className="flex w-full flex-col sm:max-w-lg">
-          <SheetHeader>
-            <SheetTitle>{viewing?.contactName}</SheetTitle>
-            <SheetDescription>
-              #{viewing?.externalId} · {viewing?.messageCount} mensajes
-            </SheetDescription>
-          </SheetHeader>
-          {viewing ? <ConversationDetailBody conversation={viewing} /> : null}
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }
