@@ -2,8 +2,10 @@ import type {
   Audit,
   ChatMessage,
   Conversation,
+  ConversationEvaluation,
   EmphasisOption,
   Flujo,
+  FlujoImprovement,
   Report,
   Satisfaction,
   Suggestion,
@@ -70,7 +72,7 @@ export const SAMPLE_FLUJOS: Flujo[] = [
 
 type RawConversation = Omit<
   Conversation,
-  "userMessages" | "botMessages" | "messages"
+  "userMessages" | "botMessages" | "messages" | "evaluation"
 >;
 
 const RAW_CONVERSATIONS: RawConversation[] = [
@@ -245,6 +247,43 @@ function buildMessages(c: RawConversation, index: number): ChatMessage[] {
   return out;
 }
 
+const SAT_TO_NUM = { satisfecho: 5, neutral: 3, insatisfecho: 2 } as const;
+const SAT_TO_TONE = {
+  satisfecho: "positive",
+  neutral: "neutral",
+  insatisfecho: "negative",
+} as const;
+
+/** Deriva el reporte de evaluación (lo medido + trace) de una conversación. */
+function buildEvaluation(
+  c: RawConversation,
+  index: number,
+): ConversationEvaluation {
+  const sat = c.satisfaction ?? "neutral";
+  const hex = (index + 10).toString(16).padStart(6, "0");
+  return {
+    resolution: c.resolved ?? false,
+    satisfaction: SAT_TO_NUM[sat],
+    tone: SAT_TO_TONE[sat],
+    frustration: sat === "insatisfecho",
+    escalated: c.resolved === false && index % 2 === 0,
+    efficiency: Math.max(1, Math.min(5, Math.round(6 - c.messageCount / 3))),
+    scopeViolation: sat === "insatisfecho" && index % 3 === 0,
+    topic: c.preview.split(" ").slice(0, 2).join(" ").toLowerCase(),
+    summary: c.preview,
+    modelUsed: "claude-haiku-4-5",
+    tokensInput: 400 + c.messageCount * 60,
+    tokensOutput: 120 + c.messageCount * 25,
+    costUsd: Number((0.0008 + c.messageCount * 0.00005).toFixed(5)),
+    latencyMs: 600 + index * 30,
+    phoenixTraceId: `trace_${hex}`,
+    phoenixSpanId: `span_eval_${hex}`,
+    evaluatedAt: new Date(
+      Date.parse("2026-06-10T09:00:00-03:00") + index * 1_800_000 + 600_000,
+    ).toISOString(),
+  };
+}
+
 export const SAMPLE_CONVERSATIONS: Conversation[] = RAW_CONVERSATIONS.map(
   (c, index) => {
     const messages = buildMessages(c, index);
@@ -253,6 +292,7 @@ export const SAMPLE_CONVERSATIONS: Conversation[] = RAW_CONVERSATIONS.map(
       messages,
       userMessages: messages.filter((m) => m.role === "user").length,
       botMessages: messages.filter((m) => m.role === "bot").length,
+      evaluation: buildEvaluation(c, index),
     };
   },
 );
@@ -336,6 +376,56 @@ export function buildReport(conversations: Conversation[]): Report {
     suggestions: SAMPLE_SUGGESTIONS,
   };
 }
+
+// ── Auditorías sembradas (para que el historial/reporte aparezca cargado) ──
+
+export const SAMPLE_AUDITS: Audit[] = [
+  {
+    id: "aud_seed1",
+    name: "Auditoría 28 may 2026",
+    flujoId: "flj_ventas_v14",
+    flujoName: "Bot Ventas",
+    conversationCount: SAMPLE_CONVERSATIONS.length,
+    emphasis: ["resolucion", "frustracion"],
+    freeText: "Foco en por qué se pierden ventas en checkout.",
+    createdAt: "2026-05-28T17:00:00Z",
+    report: buildReport(SAMPLE_CONVERSATIONS),
+  },
+];
+
+// ── Mejoras por flujo (vista /improvements) ──
+
+function convsById(...ids: string[]): Conversation[] {
+  return SAMPLE_CONVERSATIONS.filter((c) => ids.includes(c.id));
+}
+
+/** Mock: el backend analiza el flujo y devuelve mejoras con su justificación. */
+export const FLUJO_IMPROVEMENTS: FlujoImprovement[] = [
+  {
+    title: "Tomar el pedido por WhatsApp cuando la web falla",
+    detail:
+      "Cuando el cliente no puede comprar en la web, ofrecé tomar el pedido por WhatsApp (producto, talle, dirección, pago) y enviá el link de MercadoPago, en vez de derivar a soporte.",
+    impact: "+12% satisfacción estimada · ~140 conv/mes",
+    why: "El 28% de las conversaciones de checkout terminan sin compra porque el bot deriva a 'soporte' siendo él mismo el canal (loop).",
+    conversations: convsById("c1", "c4"),
+  },
+  {
+    title: "Sub-flujo de devolución express",
+    detail:
+      "Definí un sub-flujo de devoluciones con pasos claros: motivo → reembolso o cambio → confirmación. Hoy entra en loop de derivación.",
+    impact: "+8% resolución en devoluciones",
+    why: "Las conversaciones de devolución tienen 0% de resolución y alta frustración: el agente no sabe cómo proceder.",
+    conversations: convsById("c10", "c7"),
+  },
+  {
+    title: "Inyectar promociones vigentes en el contexto",
+    detail:
+      "Cargá las promos activas en el system prompt para que el agente pueda responder sobre descuentos sin quedar mudo.",
+    impact: "Evita ~45 conv/mes sin respuesta",
+    why: "Conversaciones sobre 'descuento Black Friday' quedaron sin responder porque la promo no estaba en el contexto del agente.",
+    conversations: convsById("c12"),
+  },
+];
 
 // ── Generadores de id (cliente) ──
 

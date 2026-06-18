@@ -1,7 +1,7 @@
 import * as React from "react";
 import { MessagesSquare, Search, Upload } from "lucide-react";
 
-import { ChatTranscript } from "@/components/shared/chat-transcript";
+import { ConversationDetailBody } from "@/components/shared/conversation-detail-body";
 import { ScoreBadge } from "@/components/shared/score-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -197,9 +197,7 @@ export function ConversacionesTab({
               #{viewing?.externalId} · {viewing?.messageCount} mensajes
             </SheetDescription>
           </SheetHeader>
-          <div className="mt-4 flex-1 overflow-y-auto pr-1">
-            {viewing ? <ChatTranscript conversation={viewing} /> : null}
-          </div>
+          {viewing ? <ConversationDetailBody conversation={viewing} /> : null}
         </SheetContent>
       </Sheet>
     </div>

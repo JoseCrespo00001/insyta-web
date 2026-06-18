@@ -7,7 +7,24 @@ import type { Project } from "./types";
  * React Query. Hoy la lista vive en estado de cliente (ver projects-view.tsx)
  * para poder construir la UI sin backend.
  */
-export const STUB_PROJECTS: Project[] = [];
+export const STUB_PROJECTS: Project[] = [
+  {
+    publicId: "proj_8dJ7Kw2nGfL5HsBp",
+    name: "Bot Ventas 001",
+    agentCount: 1,
+    conversationCount: 12,
+    score: 58,
+    updatedAt: "2026-06-16T20:00:00Z",
+  },
+  {
+    publicId: "proj_3MnK9Wp2LfH6Bs8d",
+    name: "Bot Soporte 24h",
+    agentCount: 1,
+    conversationCount: 0,
+    score: null,
+    updatedAt: "2026-05-10T14:00:00Z",
+  },
+];
 
 let counter = 0;
 

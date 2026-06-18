@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate } from "@/lib/format";
 import {
+  SAMPLE_AUDITS,
   SAMPLE_CONVERSATIONS,
   SAMPLE_FLUJOS,
   buildReport,
@@ -22,8 +23,10 @@ import type { Audit, Conversation, Flujo } from "@/lib/projects/types";
 export function ProjectDetailView({ projectId }: { projectId: string }) {
   // Estado compartido del proyecto (mock; el backend persiste de verdad).
   const [flujos, setFlujos] = React.useState<Flujo[]>(SAMPLE_FLUJOS);
-  const [conversations, setConversations] = React.useState<Conversation[]>([]);
-  const [audits, setAudits] = React.useState<Audit[]>([]);
+  const [conversations, setConversations] = React.useState<Conversation[]>(() =>
+    SAMPLE_CONVERSATIONS.map((c) => ({ ...c })),
+  );
+  const [audits, setAudits] = React.useState<Audit[]>(SAMPLE_AUDITS);
 
   function uploadCsv() {
     // Mock: el backend parsea el CSV real. Acá poblamos con datos de ejemplo.

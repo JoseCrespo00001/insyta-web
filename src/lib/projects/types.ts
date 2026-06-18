@@ -33,6 +33,27 @@ export type ChatMessage = {
   at: string; // ISO timestamp del mensaje (viene del CSV)
 };
 
+/** Reporte de evaluación de una conversación (lo que se midió + trace). */
+export type ConversationEvaluation = {
+  resolution: boolean;
+  satisfaction: number; // 1-5
+  tone: "positive" | "neutral" | "negative";
+  frustration: boolean;
+  escalated: boolean;
+  efficiency: number; // 1-5
+  scopeViolation: boolean;
+  topic: string;
+  summary: string;
+  modelUsed: string;
+  tokensInput: number;
+  tokensOutput: number;
+  costUsd: number;
+  latencyMs: number;
+  phoenixTraceId: string;
+  phoenixSpanId: string;
+  evaluatedAt: string;
+};
+
 export type Conversation = {
   id: string;
   externalId: string; // número/identificador del chat
@@ -45,6 +66,7 @@ export type Conversation = {
   score: number | null;
   satisfaction: Satisfaction | null;
   resolved: boolean | null; // false = el agente no resolvió
+  evaluation: ConversationEvaluation; // reporte detallado (lo medido + trace)
   selected: boolean; // para testear en la auditoría
 };
 
@@ -59,6 +81,15 @@ export type Suggestion = {
   title: string;
   detail: string;
   impact: string; // ej: "+12% satisfacción estimada"
+};
+
+/** Mejora de un flujo con su justificación y las conversaciones que la motivaron. */
+export type FlujoImprovement = {
+  title: string;
+  detail: string;
+  impact: string;
+  why: string; // dato concreto que justifica la mejora
+  conversations: Conversation[]; // las que necesitaron esta mejora
 };
 
 /** Resultado de una auditoría. */
