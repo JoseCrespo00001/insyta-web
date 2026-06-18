@@ -1,10 +1,13 @@
 import Link from "next/link";
 import {
+  AlertTriangle,
+  ArrowRight,
   Bell,
   ClipboardList,
   FileUp,
   Loader2,
   MessageSquare,
+  Smile,
   Sparkles,
   TrendingDown,
   TrendingUp,
@@ -34,22 +37,34 @@ const OVERVIEW = [
     label: "Conversaciones evaluadas",
     value: DASHBOARD_OVERVIEW.conversationsEvaluated,
     icon: MessageSquare,
+    sub: `+${DASHBOARD_OVERVIEW.conversationsThisWeek} esta semana`,
   },
   {
     label: "Score promedio",
     value: DASHBOARD_OVERVIEW.avgScore,
     icon: TrendingUp,
+    delta: DASHBOARD_OVERVIEW.avgScoreDelta,
   },
   {
     label: "Auditorías corridas",
     value: DASHBOARD_OVERVIEW.auditsRun,
     icon: ClipboardList,
+    sub: DASHBOARD_OVERVIEW.auditsRunning
+      ? `${DASHBOARD_OVERVIEW.auditsRunning} en curso`
+      : "Ninguna en curso",
   },
   {
     label: "Mejoras aplicadas",
     value: DASHBOARD_OVERVIEW.improvementsApplied,
     icon: Sparkles,
+    sub: `${DASHBOARD_OVERVIEW.suggestionsOpen} sugerencias abiertas`,
   },
+] as const;
+
+const SAT_META = [
+  { key: "satisfecho", label: "Satisfecho", bar: "bg-score-good" },
+  { key: "neutral", label: "Neutral", bar: "bg-score-risk" },
+  { key: "insatisfecho", label: "Insatisfecho", bar: "bg-score-critical" },
 ] as const;
 
 const ACTIVITY_ICON: Record<ActivityKind, typeof Bell> = {
@@ -79,6 +94,15 @@ function ScoreDelta({ delta }: { delta: number | null }) {
 export default function DashboardPage() {
   const running = PROJECT_SUMMARIES.filter((p) => p.auditStatus === "running");
 
+  const sat = DASHBOARD_OVERVIEW.satisfaction;
+  const satTotal = sat.satisfecho + sat.neutral + sat.insatisfecho || 1;
+  const totalAlerts = PROJECT_SUMMARIES.reduce((a, p) => a + p.openAlerts, 0);
+  const totalSuggestions = PROJECT_SUMMARIES.reduce(
+    (a, p) => a + p.suggestionsOpen,
+    0,
+  );
+  const dropping = PROJECT_SUMMARIES.filter((p) => (p.scoreDelta ?? 0) < 0);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -98,17 +122,99 @@ export default function DashboardPage() {
 
       {/* Overview */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {OVERVIEW.map(({ label, value, icon: Icon }) => (
-          <Card key={label}>
+        {OVERVIEW.map((item) => (
+          <Card key={item.label}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardDescription>{label}</CardDescription>
-              <Icon className="h-4 w-4 text-muted-foreground" />
+              <CardDescription>{item.label}</CardDescription>
+              <item.icon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold tracking-tight">{value}</p>
+            <CardContent className="space-y-1">
+              <p className="text-3xl font-bold tracking-tight">{item.value}</p>
+              {"delta" in item ? (
+                <ScoreDelta delta={item.delta} />
+              ) : (
+                <p className="text-xs text-muted-foreground">{item.sub}</p>
+              )}
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Satisfacción global + Requiere atención */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardContent className="space-y-3 p-4">
+            <h2 className="flex items-center gap-2 text-sm font-semibold">
+              <Smile className="h-4 w-4 text-muted-foreground" />
+              Satisfacción global · {satTotal} conversaciones
+            </h2>
+            <div className="space-y-2.5">
+              {SAT_META.map(({ key, label, bar }) => {
+                const count = sat[key];
+                const pct = Math.round((count / satTotal) * 100);
+                return (
+                  <div key={key} className="space-y-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>{label}</span>
+                      <span className="text-muted-foreground">
+                        {count} ({pct}%)
+                      </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={`h-full rounded-full ${bar}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="space-y-3 p-4">
+            <h2 className="flex items-center gap-2 text-sm font-semibold">
+              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              Requiere atención
+            </h2>
+            <div className="space-y-2">
+              {totalAlerts > 0 ? (
+                <AttentionRow
+                  icon={Bell}
+                  intent="bad"
+                  text={`${totalAlerts} alerta${totalAlerts > 1 ? "s" : ""} abierta${totalAlerts > 1 ? "s" : ""}`}
+                  href="/projects"
+                />
+              ) : null}
+              {totalSuggestions > 0 ? (
+                <AttentionRow
+                  icon={Sparkles}
+                  intent="primary"
+                  text={`${totalSuggestions} sugerencias de mejora sin revisar`}
+                  href="/improvements"
+                />
+              ) : null}
+              {dropping.map((p) => (
+                <AttentionRow
+                  key={p.publicId}
+                  icon={TrendingDown}
+                  intent="bad"
+                  text={`${p.name} · score ${p.scoreDelta} esta semana`}
+                  href={`/projects/${p.publicId}`}
+                />
+              ))}
+              {totalAlerts === 0 &&
+              totalSuggestions === 0 &&
+              dropping.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Todo en orden. No hay nada que requiera atención.
+                </p>
+              ) : null}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Auditorías en curso */}
@@ -232,6 +338,37 @@ export default function DashboardPage() {
         </Card>
       </section>
     </div>
+  );
+}
+
+function AttentionRow({
+  icon: Icon,
+  text,
+  href,
+  intent,
+}: {
+  icon: typeof Bell;
+  text: string;
+  href: string;
+  intent: "bad" | "primary";
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted"
+    >
+      <div
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+          intent === "bad"
+            ? "bg-score-critical/15 text-score-critical"
+            : "bg-primary/15 text-primary"
+        }`}
+      >
+        <Icon className="h-4 w-4" />
+      </div>
+      <span className="min-w-0 flex-1 truncate text-sm">{text}</span>
+      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+    </Link>
   );
 }
 

@@ -53,9 +53,14 @@ export const PROJECT_SUMMARIES: ProjectSummary[] = [
 
 export const DASHBOARD_OVERVIEW = {
   conversationsEvaluated: 46,
+  conversationsThisWeek: 8,
   avgScore: 64,
+  avgScoreDelta: -3, // vs semana anterior
   auditsRun: 4,
+  auditsRunning: 1,
   improvementsApplied: 1,
+  suggestionsOpen: 5,
+  satisfaction: { satisfecho: 21, neutral: 11, insatisfecho: 14 },
 };
 
 export type ActivityKind = "audit" | "improvement" | "alert" | "upload";

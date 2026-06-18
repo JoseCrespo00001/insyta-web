@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
 
 import { AuditoriasTab } from "./sections/auditorias-tab";
 import { ConversacionesTab } from "./sections/conversaciones-tab";
@@ -20,7 +21,13 @@ import {
 } from "@/lib/projects/mock";
 import type { Audit, Conversation, Flujo } from "@/lib/projects/types";
 
-export function ProjectDetailView({ projectId }: { projectId: string }) {
+export function ProjectDetailView({
+  projectId,
+  initialTab = "resumen",
+}: {
+  projectId: string;
+  initialTab?: string;
+}) {
   // Estado compartido del proyecto (mock; el backend persiste de verdad).
   const [flujos, setFlujos] = React.useState<Flujo[]>(SAMPLE_FLUJOS);
   const [conversations, setConversations] = React.useState<Conversation[]>(() =>
@@ -31,6 +38,7 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
   function uploadCsv() {
     // Mock: el backend parsea el CSV real. Acá poblamos con datos de ejemplo.
     setConversations(SAMPLE_CONVERSATIONS.map((c) => ({ ...c })));
+    toast.success("Conversaciones cargadas desde el CSV");
   }
 
   function toggleConversation(id: string) {
@@ -57,10 +65,13 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
     setConversations((prev) =>
       prev.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c)),
     );
+    const willPin = !conversations.find((c) => c.id === id)?.pinned;
+    toast.success(willPin ? "Conversación fijada" : "Conversación desfijada");
   }
 
   function deleteConversation(id: string) {
     setConversations((prev) => prev.filter((c) => c.id !== id));
+    toast.success("Conversación eliminada");
   }
 
   function createAudit(config: {
@@ -84,9 +95,11 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
       report: buildReport(selected),
     };
     setAudits((prev) => [audit, ...prev]);
+    toast.success(`Auditoría corrida sobre ${selected.length} conversaciones`);
   }
 
   function archiveAudit(id: string) {
+    const willArchive = audits.find((a) => a.id === id)?.status !== "archived";
     setAudits((prev) =>
       prev.map((a) =>
         a.id === id
@@ -94,10 +107,14 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
           : a,
       ),
     );
+    toast.success(
+      willArchive ? "Auditoría archivada" : "Auditoría desarchivada",
+    );
   }
 
   function deleteAudit(id: string) {
     setAudits((prev) => prev.filter((a) => a.id !== id));
+    toast.success("Auditoría eliminada");
   }
 
   return (
@@ -120,7 +137,7 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
         <p className="text-sm text-muted-foreground">{projectId}</p>
       </div>
 
-      <Tabs defaultValue="resumen" className="space-y-4">
+      <Tabs defaultValue={initialTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="resumen">Resumen</TabsTrigger>
           <TabsTrigger value="flujos">Flujos</TabsTrigger>

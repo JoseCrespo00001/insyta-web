@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Bell, CreditCard, Plug, User } from "lucide-react";
+import { toast } from "sonner";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -123,7 +124,9 @@ function PerfilSection() {
         </div>
 
         <div className="flex justify-end">
-          <Button>Guardar cambios</Button>
+          <Button onClick={() => toast.success("Cambios guardados")}>
+            Guardar cambios
+          </Button>
         </div>
       </CardContent>
     </Card>

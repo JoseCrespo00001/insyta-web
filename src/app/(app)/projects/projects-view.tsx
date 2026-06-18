@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { FolderKanban, Plus } from "lucide-react";
+import { toast } from "sonner";
 
 import { ScoreBadge } from "@/components/shared/score-badge";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ export function ProjectsView() {
       },
       ...prev,
     ]);
+    toast.success(`Proyecto "${name}" creado`);
   }
 
   return (
@@ -93,7 +95,9 @@ export function ProjectsView() {
                   <Link href={`/projects/${project.publicId}`}>Ver</Link>
                 </Button>
                 <Button asChild size="sm">
-                  <Link href={`/projects/${project.publicId}/upload`}>
+                  <Link
+                    href={`/projects/${project.publicId}?tab=conversaciones`}
+                  >
                     Subir CSV
                   </Link>
                 </Button>

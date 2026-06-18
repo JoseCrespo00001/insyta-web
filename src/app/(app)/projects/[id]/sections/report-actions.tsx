@@ -23,6 +23,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+
 import { downloadAuditCsv, downloadAuditJson } from "@/lib/projects/export";
 import type { Audit } from "@/lib/projects/types";
 
@@ -48,11 +50,21 @@ export function ReportActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => downloadAuditJson(audit)}>
+          <DropdownMenuItem
+            onClick={() => {
+              downloadAuditJson(audit);
+              toast.success("Descargando reporte (JSON)");
+            }}
+          >
             <FileJson className="h-4 w-4" />
             Reporte (JSON)
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => downloadAuditCsv(audit)}>
+          <DropdownMenuItem
+            onClick={() => {
+              downloadAuditCsv(audit);
+              toast.success("Descargando conversaciones (CSV)");
+            }}
+          >
             <SheetIcon className="h-4 w-4" />
             Conversaciones (CSV)
           </DropdownMenuItem>
