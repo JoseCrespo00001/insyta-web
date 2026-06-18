@@ -202,9 +202,11 @@ export function TopNav() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOut className="h-4 w-4" />
-              Cerrar sesión
+            <DropdownMenuItem asChild>
+              <Link href="/login">
+                <LogOut className="h-4 w-4" />
+                Cerrar sesión
+              </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
