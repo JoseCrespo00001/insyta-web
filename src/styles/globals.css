@@ -105,3 +105,36 @@
     box-shadow: 0 0 28px hsl(137 72% 66% / 0.55);
   }
 }
+
+/* Aurora — orbes verdes que derivan lento detrás del login. */
+@keyframes aurora-float {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(40px, -28px) scale(1.12);
+  }
+  66% {
+    transform: translate(-28px, 26px) scale(0.92);
+  }
+}
+@keyframes halo-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1.35);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.65);
+  }
+}
+@layer components {
+  .aurora {
+    animation: aurora-float 16s ease-in-out infinite;
+  }
+  .halo-pulse {
+    animation: halo-pulse 6s ease-in-out infinite;
+  }
+}
