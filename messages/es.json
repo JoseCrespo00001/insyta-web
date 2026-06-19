@@ -23,6 +23,7 @@
     "ctaPrimary": "Empezar",
     "ctaSecondary": "Ver cómo funciona",
     "trust": "Sin código · Conecta en 5 minutos · WhatsApp, WATI, Respond.io y SDK",
+    "cardsHint": "Conversaciones reales evaluadas · hacé click para ver el expediente",
     "card": {
       "label": "Conversación evaluada",
       "id": "conv_8f3a · tracking de pedido",

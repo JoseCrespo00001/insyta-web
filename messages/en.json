@@ -23,6 +23,7 @@
     "ctaPrimary": "Get started",
     "ctaSecondary": "See how it works",
     "trust": "No code · Connect in 5 minutes · WhatsApp, WATI, Respond.io and SDK",
+    "cardsHint": "Real conversations evaluated · click to open the case file",
     "card": {
       "label": "Evaluated conversation",
       "id": "conv_8f3a · order tracking",

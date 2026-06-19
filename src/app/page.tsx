@@ -1,7 +1,6 @@
 import { Navbar } from "@/components/landing/navbar";
 import { LandingBackground } from "@/components/landing/landing-background";
 import { Hero } from "@/components/landing/hero";
-import { Problem } from "@/components/landing/problem";
 import { DashboardPreview } from "@/components/landing/dashboard-preview";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { Features } from "@/components/landing/features";
@@ -17,7 +16,6 @@ export default function HomePage() {
       <Navbar />
       <main>
         <Hero />
-        <Problem />
         <DashboardPreview />
         <HowItWorks />
         <Features />
