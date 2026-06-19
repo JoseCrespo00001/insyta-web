@@ -9,7 +9,7 @@ export function CtaBand() {
   const t = useTranslations("cta");
 
   return (
-    <section className="border-t border-border py-24">
+    <section className="py-24">
       <div className="container">
         <Reveal className="relative isolate overflow-hidden rounded-3xl bg-[#000B1A] px-6 py-16 text-center text-white md:px-16 md:py-20">
           <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">

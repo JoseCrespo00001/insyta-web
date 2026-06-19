@@ -12,7 +12,7 @@ export function HowItWorks() {
   const steps = t.raw("steps") as Step[];
 
   return (
-    <section id="como-funciona" className="border-t border-border py-24">
+    <section id="como-funciona" className="py-24">
       <div className="container">
         <Reveal className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-wider text-primary">

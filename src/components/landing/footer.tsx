@@ -3,15 +3,13 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 
 const PRODUCT_LINKS = [
+  { id: "dashboard", key: "nav.dashboard" },
   { id: "como-funciona", key: "nav.howItWorks" },
   { id: "producto", key: "nav.features" },
   { id: "integraciones", key: "nav.integrations" },
 ] as const;
 
-const RESOURCE_LINKS = [
-  { id: "casos", key: "nav.useCases" },
-  { id: "faq", key: "nav.faq" },
-] as const;
+const RESOURCE_LINKS = [{ id: "faq", key: "nav.faq" }] as const;
 
 export function Footer() {
   const t = useTranslations();

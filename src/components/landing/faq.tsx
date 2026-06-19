@@ -16,7 +16,7 @@ export function Faq() {
   const items = t.raw("items") as Item[];
 
   return (
-    <section id="faq" className="border-t border-border py-24">
+    <section id="faq" className="py-24">
       <div className="container max-w-3xl">
         <div className="text-center">
           <p className="text-sm font-semibold uppercase tracking-wider text-primary">

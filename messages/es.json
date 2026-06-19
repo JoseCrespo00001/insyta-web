@@ -8,7 +8,8 @@
     "howItWorks": "Cómo funciona",
     "features": "Producto",
     "integrations": "Integraciones",
-    "useCases": "Casos",
+    "dashboard": "Dashboard",
+    "problem": "Problema",
     "faq": "FAQ",
     "login": "Ingresar",
     "cta": "Empezar",
@@ -18,7 +19,7 @@
   "hero": {
     "badge": "Mejora continua para agentes de IA",
     "title": "El supervisor que tu agente de IA necesita",
-    "subtitle": "Insyta conecta tu agente, evalúa cada conversación, detecta dónde falla y propone mejoras al prompt que se verifican solas.",
+    "subtitle": "Conectá tus conversaciones de WhatsApp e Instagram y obtené un dashboard accionable: scores, tendencias, alertas y propuestas de mejora para ver dónde tu agente resolvió y dónde te está costando ventas.",
     "ctaPrimary": "Empezar",
     "ctaSecondary": "Ver cómo funciona",
     "trust": "Sin código · Conecta en 5 minutos · WhatsApp, WATI, Respond.io y SDK",
@@ -39,10 +40,31 @@
       "delta": "+18 pts verificado a 14 días"
     }
   },
+  "problem": {
+    "eyebrow": "El problema",
+    "title": "Tu agente atiende solo. ¿Quién lo controla?",
+    "subtitle": "Las PyMEs que venden por WhatsApp e Instagram no tienen visibilidad sobre la calidad de lo que responde su bot. Cada conversación que falla es una venta perdida — y nadie se entera.",
+    "beforeTitle": "Hoy: canal opaco",
+    "before": [
+      "Sin sistema de monitoreo de calidad de las respuestas",
+      "No sabés en qué conversaciones falló el bot",
+      "Solo reportes agregados: cantidad de mensajes y tiempos",
+      "La dueña decide a ciegas, sin datos",
+      "Alucinaciones que nadie ve hasta que llega el reclamo"
+    ],
+    "afterTitle": "Con Insyta: canal medible",
+    "after": [
+      "Puntaje de calidad por conversación, en tiempo real",
+      "Alertas tempranas ante desvíos estadísticos (SPC + drift)",
+      "Recomendaciones de mejora validadas, no corazonadas",
+      "Ciclo completo: detectar → diagnosticar → mejorar → verificar",
+      "Detecta cuando el bot cambia de comportamiento (degradación, cambio de proveedor)"
+    ]
+  },
   "howItWorks": {
     "eyebrow": "Cómo funciona",
     "title": "Un loop cerrado que mejora a tu agente cada semana",
-    "subtitle": "No es analytics ni observabilidad. Es el entrenador que supervisa, corrige y mide a tu agente.",
+    "subtitle": "No es analytics ni observabilidad pasiva. Es el ciclo completo que supervisa, corrige y verifica a tu agente: detectar → diagnosticar → mejorar → verificar.",
     "steps": [
       {
         "step": "01",
@@ -51,44 +73,44 @@
       },
       {
         "step": "02",
-        "title": "Evaluamos cada conversación",
-        "description": "Un LLM-as-judge puntúa resolución, satisfacción, tono y frustración. De 0 a 100."
+        "title": "Diagnosticamos cada conversación",
+        "description": "Un LLM-as-judge puntúa resolución, satisfacción, tono y frustración de 0 a 100, y vigilamos los desvíos con control estadístico de procesos."
       },
       {
         "step": "03",
-        "title": "Detectamos patrones de fallo",
-        "description": "Agrupamos las conversaciones malas por tema y dimensión para ver dónde se rompe."
+        "title": "Detectamos patrones y drift",
+        "description": "Agrupamos las conversaciones malas por tema y dimensión, y alertamos cuando el agente empieza a degradarse."
       },
       {
         "step": "04",
-        "title": "Mejoramos y medimos",
-        "description": "Proponemos cambios al prompt y verificamos el impacto con el delta de score a 14 días."
+        "title": "Mejoramos y verificamos",
+        "description": "Proponemos cambios al prompt, los validamos con regresión semántica y medimos el impacto con el delta de score a 14 días."
       }
     ]
   },
   "features": {
     "eyebrow": "Producto",
-    "title": "Todo lo que necesitás para que tu bot venda más y frustre menos",
+    "title": "Observabilidad, auditoría y mejora continua para tu agente",
     "items": [
       {
-        "title": "LLM-as-judge",
-        "description": "Cada chat puntuado con criterio objetivo: score 0–100 sobre 10 dimensiones de calidad."
+        "title": "Score por conversación",
+        "description": "Un LLM-as-judge puntúa cada chat de 0 a 100 sobre 10 dimensiones: resolución, tono, satisfacción, frustración y más."
       },
       {
-        "title": "Optimization Loop",
-        "description": "Detecta, propone y mide. El único loop de mejora cerrado del mercado."
+        "title": "Control estadístico (SPC) + drift",
+        "description": "Detectamos desvíos de calidad con técnicas de control estadístico de procesos y avisamos cuando tu agente empieza a degradarse."
       },
       {
-        "title": "Patrones de fallo",
-        "description": "Clusters por tema y dimensión, como “tracking de pedido + frustración”, priorizados por impacto."
+        "title": "Mejoras validadas",
+        "description": "Cada recomendación de prompt se valida con pruebas de regresión semántica antes de aplicarla. Nada de corazonadas."
       },
       {
-        "title": "Alertas inteligentes",
-        "description": "Te avisamos cuando el score cae, sube la frustración o aparece un tema nuevo."
+        "title": "Alertas tempranas",
+        "description": "Te avisamos apenas el score cae, sube la frustración o aparece un desvío estadístico — antes de que se traduzca en ventas perdidas."
       },
       {
-        "title": "PII-safe por diseño",
-        "description": "Anonimizamos los datos sensibles antes de que el texto toque cualquier LLM."
+        "title": "Anti-alucinaciones",
+        "description": "Detectamos respuestas de riesgo y alucinaciones antes de que te generen un problema legal o un cliente enojado."
       },
       {
         "title": "Multi-agente y agencias",
@@ -108,36 +130,57 @@
       { "name": "Custom SDK", "tag": "Node · Python" }
     ]
   },
-  "useCases": {
-    "eyebrow": "Casos",
-    "title": "Aplica a cualquier agente, en cualquier industria",
-    "subtitle": "Si tu agente conversa con clientes, Insyta encuentra dónde te está costando plata.",
-    "items": [
+  "dashboardPreview": {
+    "eyebrow": "El panel",
+    "title": "Un dashboard accionable, no otro panel de métricas",
+    "subtitle": "Todo lo que pasó en tus chats de WhatsApp e Instagram, en un solo lugar: qué resolvió el agente, qué se le escapó y qué cambiar para vender más.",
+    "windowUrl": "app.insyta.com/dashboard",
+    "kpis": [
+      { "label": "Conversaciones", "value": "1.284", "sub": "+128 esta semana" },
+      { "label": "Score promedio", "value": "76", "delta": 6 },
+      { "label": "Alertas abiertas", "value": "5", "sub": "requieren atención" },
+      { "label": "Mejoras propuestas", "value": "3", "sub": "sin revisar" }
+    ],
+    "conversationsTitle": "Últimas conversaciones",
+    "rows": [
       {
-        "industry": "Ecommerce",
-        "pain": "“¿Dónde está mi pedido?”, devoluciones confusas y recomendaciones que no convierten."
+        "channel": "whatsapp",
+        "text": "“¿Hay stock del modelo azul?”",
+        "status": "Resuelta",
+        "intent": "good",
+        "score": 88
       },
       {
-        "industry": "Salud",
-        "pain": "Respuestas de riesgo a síntomas, agendamiento que falla e info de seguros poco clara."
+        "channel": "whatsapp",
+        "text": "“¿Dónde está mi pedido #4821?”",
+        "status": "Sin resolver",
+        "intent": "bad",
+        "score": 34
       },
       {
-        "industry": "Fintech",
-        "pain": "Consultas de saldo que fallan, reclamos sin resolver y tasas desactualizadas."
+        "channel": "instagram",
+        "text": "Reclamo por producto fallado",
+        "status": "Escaló a humano",
+        "intent": "warn",
+        "score": 52
       },
       {
-        "industry": "Cobranza",
-        "pain": "Deudores que se van porque el agente no supo manejar la objeción “no tengo plata”."
-      },
-      {
-        "industry": "Ventas consultivas",
-        "pain": "Leads fríos que llegan al closer y queman horas en reuniones inútiles."
-      },
-      {
-        "industry": "Logística",
-        "pain": "Entregas reprogramadas mal porque el agente no validó la zona de cobertura."
+        "channel": "whatsapp",
+        "text": "Cierre de venta — plan anual",
+        "status": "Resuelta",
+        "intent": "good",
+        "score": 91
       }
-    ]
+    ],
+    "attentionTitle": "Requiere atención",
+    "attention": [
+      { "text": "3 clientes preguntaron “¿dónde está mi pedido?” y el agente no resolvió" },
+      { "text": "Reclamo en Instagram sin respuesta hace 2 h" },
+      { "text": "El score de “consultas de stock” cayó 12 pts esta semana" }
+    ],
+    "improvementTitle": "Propuesta de mejora",
+    "improvementText": "Cuando pregunten por un pedido, pedir el número antes de escalar y dar un ETA concreto.",
+    "improvementDelta": "+18 pts verificado a 14 días"
   },
   "faq": {
     "eyebrow": "FAQ",

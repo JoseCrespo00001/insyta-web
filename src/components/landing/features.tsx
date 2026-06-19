@@ -1,10 +1,10 @@
 import { useTranslations } from "next-intl";
 import {
-  Scale,
-  RefreshCw,
-  Network,
+  Gauge,
+  Activity,
+  FlaskConical,
   BellRing,
-  ShieldCheck,
+  ShieldAlert,
   LayoutGrid,
 } from "lucide-react";
 
@@ -12,14 +12,21 @@ import { Reveal } from "@/components/landing/reveal";
 
 type Feature = { title: string; description: string };
 
-const ICONS = [Scale, RefreshCw, Network, BellRing, ShieldCheck, LayoutGrid];
+const ICONS = [
+  Gauge,
+  Activity,
+  FlaskConical,
+  BellRing,
+  ShieldAlert,
+  LayoutGrid,
+];
 
 export function Features() {
   const t = useTranslations("features");
   const items = t.raw("items") as Feature[];
 
   return (
-    <section id="producto" className="border-t border-border py-24">
+    <section id="producto" className="py-24">
       <div className="container">
         <Reveal className="mx-auto max-w-2xl text-center">
           <p className="text-sm font-semibold uppercase tracking-wider text-primary">
@@ -32,7 +39,7 @@ export function Features() {
 
         <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((f, i) => {
-            const Icon = ICONS[i] ?? Scale;
+            const Icon = ICONS[i] ?? Gauge;
             return (
               <Reveal key={f.title} delay={(i % 3) * 0.08}>
                 <div className="h-full rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary/40">
