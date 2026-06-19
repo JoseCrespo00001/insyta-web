@@ -17,7 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const SECTIONS = [
-  { id: "problema", key: "problem" },
+  // { id: "problema", key: "problem" }, // oculto del navbar (la sección sigue en la página)
   { id: "dashboard", key: "dashboard" },
   { id: "como-funciona", key: "howItWorks" },
   { id: "producto", key: "features" },
@@ -55,18 +55,18 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 flex items-center gap-3 px-4 py-3 md:px-6">
-      {/* Isla: logo (chip charcoal fijo → el wordmark blanco se ve siempre) */}
+      {/* Logo: wordmark logo_blan (texto blanco) → chip oscuro para que se lea en ambos temas. */}
       <Link
         href="/"
-        className="flex h-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-[hsl(215_100%_5%)] px-3 shadow-sm"
+        className="flex h-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-[hsl(215_100%_5%)] px-4 shadow-sm"
         aria-label="Insyta"
       >
         <Image
-          src="/logos/logo_wordmark_white.svg"
+          src="/logos/logo_blan.svg"
           alt="Insyta"
-          width={72}
-          height={24}
-          className="h-6 w-auto"
+          width={108}
+          height={36}
+          className="h-7 w-auto"
           unoptimized
           priority
         />

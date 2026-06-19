@@ -32,7 +32,7 @@ export function LandingBackground() {
           height={544}
           unoptimized
           priority={i === 0}
-          className={`aurora absolute opacity-[0.13] dark:opacity-[0.08] ${cls}`}
+          className={`aurora absolute opacity-[0.18] dark:opacity-[0.13] ${cls}`}
         />
       ))}
     </div>
