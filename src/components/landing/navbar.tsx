@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { Menu, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -61,14 +60,15 @@ export function Navbar() {
         className="flex h-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-[hsl(215_100%_5%)] px-4 shadow-sm"
         aria-label="Insyta"
       >
-        <Image
-          src="/logos/logo_blan.svg"
+        {/* logo_wordmark_white = mismo wordmark sin el filtro drop-shadow que
+            pixelaba el icono (logo_blan lo aplica). <img> plano = SVG vectorial nítido. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logos/logo_wordmark_white.svg"
           alt="Insyta"
           width={108}
           height={36}
           className="h-7 w-auto"
-          unoptimized
-          priority
         />
       </Link>
 

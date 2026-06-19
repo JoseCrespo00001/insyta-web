@@ -57,13 +57,13 @@ export function Hero() {
             initial={{ opacity: 0, y: 32, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.7, ease: "easeOut", delay: 0.15 }}
-            className="flex flex-col items-center gap-4 lg:items-end"
+            className="flex flex-col items-center gap-4"
           >
             <ConversationCards
               onSelect={setSelected}
               selectedId={selected?.id}
             />
-            <p className="text-center text-xs text-muted-foreground lg:pr-4">
+            <p className="text-center text-xs text-muted-foreground">
               {t("cardsHint")}
             </p>
           </motion.div>

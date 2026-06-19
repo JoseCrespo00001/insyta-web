@@ -39,7 +39,7 @@ export function DisplayCard({
         }
       }}
       className={cn(
-        "relative flex h-36 w-[20rem] -skew-y-[8deg] cursor-pointer select-none flex-col justify-between rounded-xl border-2 bg-card/80 px-4 py-3 shadow-sm backdrop-blur-sm transition-all duration-700 after:absolute after:-right-1 after:top-[-5%] after:h-[110%] after:w-[16rem] after:bg-gradient-to-l after:from-background after:to-transparent after:content-[''] hover:border-primary/40 hover:bg-card",
+        "relative flex h-40 w-[23rem] -skew-y-[8deg] cursor-pointer select-none flex-col justify-between rounded-2xl border-2 bg-card/95 px-5 py-4 shadow-md backdrop-blur-sm transition-all duration-500 hover:border-primary/40 hover:bg-card hover:shadow-lg",
         className,
       )}
     >
@@ -53,12 +53,14 @@ export function DisplayCard({
           >
             {icon}
           </span>
-          <p className={cn("text-sm font-semibold", titleClassName)}>{title}</p>
+          <p className={cn("text-base font-semibold", titleClassName)}>
+            {title}
+          </p>
         </span>
         {trailing}
       </div>
-      <p className="truncate text-sm">{description}</p>
-      <p className="text-xs text-muted-foreground">{date}</p>
+      <p className="truncate text-sm text-muted-foreground">{description}</p>
+      <p className="text-xs text-muted-foreground/70">{date}</p>
     </div>
   );
 }
