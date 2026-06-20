@@ -95,24 +95,28 @@ export function HowItWorks() {
   const t = useTranslations("howItWorks");
 
   return (
-    <section id="como-funciona" className="py-24">
+    // bg-background opaco: tapa los blobs del fondo global solo en esta sección
+    // para que no se confundan con el isotipo del ciclo.
+    <section id="como-funciona" className="bg-background py-24">
       <div className="container">
-        <Reveal className="mx-auto max-w-2xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-primary">
-            {t("eyebrow")}
-          </p>
-          <h2 className="mt-3 text-balance text-3xl font-bold tracking-tight md:text-4xl">
-            {t("title")}
-          </h2>
-          <p className="mt-4 text-balance text-lg text-muted-foreground">
-            {t("subtitle")}
-          </p>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Tocá cada etapa del loop para ver el detalle y sus conexiones.
-          </p>
-        </Reveal>
+        <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-4">
+          <Reveal className="max-w-xl">
+            <p className="text-sm font-semibold uppercase tracking-wider text-primary">
+              {t("eyebrow")}
+            </p>
+            <h2 className="mt-3 text-balance text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
+              {t("title")}
+            </h2>
+            <p className="mt-5 text-balance text-lg text-muted-foreground">
+              {t("subtitle")}
+            </p>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Tocá cada etapa del loop para ver el detalle.
+            </p>
+          </Reveal>
 
-        <RadialOrbitalTimeline timelineData={TIMELINE} />
+          <RadialOrbitalTimeline timelineData={TIMELINE} />
+        </div>
       </div>
     </section>
   );
