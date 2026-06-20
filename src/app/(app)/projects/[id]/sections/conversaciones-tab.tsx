@@ -21,8 +21,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
-import { useUploadCsv, useUploadStatus } from "@/lib/queries";
-import type { Conversation, Satisfaction } from "@/lib/projects/types";
+import { useConversation, useUploadCsv, useUploadStatus } from "@/lib/queries";
+import type {
+  ChatMessage,
+  Conversation,
+  Satisfaction,
+} from "@/lib/projects/types";
 import { cn } from "@/lib/utils";
 
 const SAT_CLASS: Record<Satisfaction, string> = {
@@ -104,6 +108,7 @@ export function ConversacionesTab({
   const [collapsed, setCollapsed] = React.useState<Record<string, boolean>>({});
   const fileRef = React.useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
+  const { data: convDetail } = useConversation(viewingId);
 
   // Carga de CSV + seguimiento de progreso.
   const uploadCsv = useUploadCsv(projectId);
@@ -152,7 +157,7 @@ export function ConversacionesTab({
     <input
       ref={fileRef}
       type="file"
-      accept=".csv,text/csv"
+      accept=".csv,.txt,text/csv,text/plain"
       className="hidden"
       onChange={handleFile}
     />
@@ -182,9 +187,21 @@ export function ConversacionesTab({
   ) : null;
 
   if (viewing) {
+    // Mensajes reales del detalle (la lista no los trae).
+    const msgs: ChatMessage[] = (convDetail?.messages ?? []).map((m) => ({
+      role: m.role === "assistant" ? "bot" : "user",
+      content: m.content,
+      at: m.timestamp,
+    }));
+    const fullConv: Conversation = {
+      ...viewing,
+      messages: msgs,
+      userMessages: msgs.filter((m) => m.role === "user").length,
+      botMessages: msgs.filter((m) => m.role === "bot").length,
+    };
     return (
       <ConversationWorkspace
-        conversation={viewing}
+        conversation={fullConv}
         onBack={() => setViewingId(null)}
         onTogglePin={onTogglePin}
         onDelete={onDeleteConversation}

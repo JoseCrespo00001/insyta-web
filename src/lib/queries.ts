@@ -169,6 +169,30 @@ export function useConversations(projectId: string) {
   });
 }
 
+export type ConversationDetail = {
+  public_id: string;
+  external_id: string;
+  platform: string;
+  status: string;
+  started_at: string | null;
+  messages: {
+    public_id: string;
+    role: string;
+    content: string;
+    timestamp: string;
+  }[];
+  evaluation: Record<string, unknown> | null;
+};
+
+export function useConversation(convId: string | null) {
+  return useQuery({
+    queryKey: ["conversation", convId],
+    queryFn: () =>
+      api.get<ConversationDetail>(`/api/v1/conversations/${convId}`),
+    enabled: !!convId,
+  });
+}
+
 // ── Audits ────────────────────────────────────────────────────────────────
 export type AuditPayload = {
   flujoId?: string;
