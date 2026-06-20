@@ -1,13 +1,5 @@
 import * as React from "react";
-import {
-  ArrowLeft,
-  Pin,
-  PinOff,
-  Sparkles,
-  Trash2,
-  Workflow,
-  X,
-} from "lucide-react";
+import { ArrowLeft, Pin, PinOff, Trash2, X } from "lucide-react";
 
 import { ConversationReport } from "@/components/shared/conversation-report";
 import { Button } from "@/components/ui/button";
@@ -26,12 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
-import {
-  CSV_GROUPS,
-  FLUJO_IMPROVEMENTS,
-  SAMPLE_FLUJOS,
-} from "@/lib/projects/mock";
+import { useConversation } from "@/lib/queries";
 import type { ChatMessage, Conversation } from "@/lib/projects/types";
 import { cn } from "@/lib/utils";
 
@@ -127,72 +114,8 @@ function MessageAnalysis({
   );
 }
 
-/** Contexto de análisis: flujo auditado + mejoras que esta conversación motivó. */
-function ConversationContext({ conversation }: { conversation: Conversation }) {
-  const group = CSV_GROUPS.find((g) => g.id === conversation.uploadGroupId);
-  const flujo =
-    SAMPLE_FLUJOS.find((f) => group?.projectName.includes(f.name)) ??
-    SAMPLE_FLUJOS[0];
-  const improvements = FLUJO_IMPROVEMENTS.filter((imp) =>
-    imp.conversations.some((c) => c.id === conversation.id),
-  );
-
-  return (
-    <Card>
-      <CardContent className="space-y-3 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
-              <Workflow className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Flujo auditado</p>
-              <p className="text-sm font-medium">
-                {flujo.name} · v{flujo.version}
-              </p>
-            </div>
-          </div>
-          <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
-            {flujo.agentCount} agentes
-          </span>
-        </div>
-
-        <Separator />
-
-        <div className="space-y-2">
-          <p className="flex items-center gap-1.5 text-xs font-semibold">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            Mejoras vinculadas · {improvements.length}
-          </p>
-          {improvements.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Esta conversación no motivó ninguna mejora del flujo.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {improvements.map((imp, i) => (
-                <div key={i} className="rounded-lg border p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-medium">{imp.title}</p>
-                    <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
-                      {imp.impact}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {imp.why}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 export function ConversationWorkspace({
-  conversation,
+  conversation: conversationProp,
   onBack,
   onTogglePin,
   onDelete,
@@ -204,6 +127,30 @@ export function ConversationWorkspace({
 }) {
   const [selected, setSelected] = React.useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = React.useState(false);
+
+  // Hidratación: si la conversación viene sin transcript/eval (abierta desde un
+  // reporte o desde mejoras), traemos el detalle real por id.
+  const { data: detail } = useConversation(conversationProp.id);
+  const conversation = React.useMemo<Conversation>(() => {
+    const messages: ChatMessage[] =
+      conversationProp.messages.length > 0
+        ? conversationProp.messages
+        : (detail?.messages ?? []).map((m) => ({
+            role: m.role === "assistant" ? "bot" : "user",
+            content: m.content,
+            at: m.timestamp,
+          }));
+    const userMessages = messages.filter((m) => m.role === "user").length;
+    const botMessages = messages.filter((m) => m.role === "bot").length;
+    return {
+      ...conversationProp,
+      messages,
+      userMessages: conversationProp.userMessages || userMessages,
+      botMessages: conversationProp.botMessages || botMessages,
+      messageCount: conversationProp.messageCount || messages.length,
+      evaluation: detail?.evaluation ?? conversationProp.evaluation,
+    };
+  }, [conversationProp, detail]);
 
   return (
     <div className="space-y-4">
@@ -319,7 +266,6 @@ export function ConversationWorkspace({
               onClear={() => setSelected(null)}
             />
           ) : null}
-          <ConversationContext conversation={conversation} />
           <ConversationReport conversation={conversation} />
         </div>
       </div>

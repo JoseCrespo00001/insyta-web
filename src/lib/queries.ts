@@ -7,7 +7,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "@/lib/api";
-import type { Flujo, Project } from "@/lib/projects/types";
+import type {
+  ConversationEvaluation,
+  Flujo,
+  Project,
+} from "@/lib/projects/types";
 
 // ── Me / identity ───────────────────────────────────────────────────────────
 export type Me = {
@@ -54,6 +58,14 @@ export function useFlows(projectId: string) {
     queryKey: ["flows", projectId],
     queryFn: () => api.get<Flujo[]>(`/api/v1/projects/${projectId}/flows`),
     enabled: !!projectId,
+  });
+}
+
+// Todos los flujos del tenant (vista global de Mejoras).
+export function useAllFlows() {
+  return useQuery({
+    queryKey: ["flows", "all"],
+    queryFn: () => api.get<Flujo[]>("/api/v1/flows"),
   });
 }
 
@@ -181,7 +193,7 @@ export type ConversationDetail = {
     content: string;
     timestamp: string;
   }[];
-  evaluation: Record<string, unknown> | null;
+  evaluation: ConversationEvaluation | null;
 };
 
 export function useConversation(convId: string | null) {
@@ -264,10 +276,27 @@ export function useAudit(auditId: string) {
 }
 
 // ── Improvements ──────────────────────────────────────────────────────────
-export function useFlowImprovements(flowId: string) {
+export type ImprovementDto = {
+  id: string;
+  title: string;
+  detail: string;
+  impact: string;
+  why: string;
+  status: string;
+  conversations: Array<{
+    id: string;
+    externalId: string;
+    contactName: string | null;
+    preview: string | null;
+    score: number | null;
+  }>;
+};
+
+export function useFlowImprovements(flowId: string | null) {
   return useQuery({
     queryKey: ["improvements", flowId],
-    queryFn: () => api.get<unknown[]>(`/api/v1/flows/${flowId}/improvements`),
+    queryFn: () =>
+      api.get<ImprovementDto[]>(`/api/v1/flows/${flowId}/improvements`),
     enabled: !!flowId,
   });
 }
