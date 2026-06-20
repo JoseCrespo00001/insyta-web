@@ -1,5 +1,5 @@
 // Demo de conversaciones para la landing (mock, no i18n — fixture de marketing).
-// Casos centrados en fallos reales de agentes: alucinaciones y automatización caída.
+// Casos: alucinaciones, automatización caída, problemas de flujo y objetivos de campaña.
 export type ChatMsg = { from: "cliente" | "agente"; text: string };
 
 export type ReportDim = {
@@ -9,8 +9,16 @@ export type ReportDim = {
 };
 
 export type ProblemFlag = {
-  kind: "hallucination" | "automation" | "legal" | "ok";
+  // "flow" = problema del flujo (no del agente); "objective" = objetivo de campaña.
+  kind: "hallucination" | "automation" | "legal" | "flow" | "objective" | "ok";
   label: string;
+  detail: string;
+};
+
+export type CampaignObjective = {
+  source: string;
+  goal: string;
+  achieved: boolean;
   detail: string;
 };
 
@@ -27,8 +35,7 @@ export type Conversation = {
   chat: ChatMsg[];
   report: {
     flags: ProblemFlag[];
-    pattern: string;
-    patternIntent: "good" | "bad" | "warn";
+    objective?: CampaignObjective;
     dimensions: ReportDim[];
     improvement: string;
     delta: string;
@@ -72,7 +79,7 @@ export const CONVERSATIONS: Conversation[] = [
       flags: [
         {
           kind: "hallucination",
-          label: "Alucinación",
+          label: "Alucinación del agente",
           detail:
             "Inventó una política de 90 días con reintegro del 100% sin etiqueta. La real es 30 días y con etiqueta.",
         },
@@ -81,17 +88,20 @@ export const CONVERSATIONS: Conversation[] = [
           label: "Riesgo legal",
           detail: "Generó una obligación que la empresa no puede cumplir.",
         },
+        {
+          kind: "flow",
+          label: "Flujo de devoluciones",
+          detail:
+            "El flujo no obliga a citar la política oficial antes de responder sobre reintegros.",
+        },
       ],
-      pattern:
-        "El agente alucinó una política inexistente — expone a un reclamo.",
-      patternIntent: "bad",
       dimensions: [
         { label: "Resolución", value: "Falsa", intent: "bad" },
         { label: "Precisión", value: "Baja", intent: "bad" },
         { label: "Riesgo", value: "Alto", intent: "bad" },
       ],
       improvement:
-        "Anclar el agente solo a la política oficial y bloquear afirmaciones sobre plazos y reintegros.",
+        "Anclar el agente solo a la política oficial y agregar al flujo un paso que valide plazos y reintegros.",
       delta: "+22 pts verificado a 14 días",
     },
   },
@@ -134,18 +144,78 @@ export const CONVERSATIONS: Conversation[] = [
           label: "Dato inventado",
           detail: "Devolvió un número de pedido inexistente (#00000).",
         },
+        {
+          kind: "flow",
+          label: "Flujo de checkout",
+          detail:
+            "El flujo confirma la venta antes de validar que el pedido se creó. Falta un chequeo intermedio.",
+        },
       ],
-      pattern:
-        "Venta fantasma — la automatización confirmó un pedido que no existe.",
-      patternIntent: "bad",
       dimensions: [
         { label: "Resolución", value: "Fallida", intent: "bad" },
         { label: "Integración", value: "Caída", intent: "bad" },
         { label: "Frustración", value: "Alta", intent: "bad" },
       ],
       improvement:
-        "No confirmar sin un ID de pedido válido devuelto por el sistema; reintentar el webhook y alertar si falla.",
+        "No confirmar sin un ID de pedido válido; reintentar el webhook y alertar si la integración falla.",
       delta: "+19 pts verificado a 14 días",
+    },
+  },
+  {
+    id: "conv_5c12",
+    channel: "instagram",
+    name: "Camila Ortiz",
+    handle: "@cami.ortiz",
+    topic: "Lead de campaña · Promo invierno",
+    date: "hace 1 d",
+    score: 46,
+    status: "Objetivo no cumplido",
+    intent: "warn",
+    chat: [
+      {
+        from: "cliente",
+        text: "Hola! vi la promo de invierno en Instagram, ¿qué incluye?",
+      },
+      {
+        from: "agente",
+        text: "¡Hola! La promo es 30% off en toda la colección de invierno 🧥",
+      },
+      { from: "cliente", text: "buenísimo, ¿y cómo la aprovecho?" },
+      {
+        from: "agente",
+        text: "Entrá a la web y usá el cupón INVIERNO al pagar 😊",
+      },
+      { from: "cliente", text: "ah dale, gracias!" },
+    ],
+    report: {
+      objective: {
+        source: "Meta Ads · Campaña Promo Invierno",
+        goal: "Captar email y teléfono del lead",
+        achieved: false,
+        detail:
+          "El lead estaba interesado pero el agente nunca pidió sus datos: se perdió el contacto que pagó la campaña.",
+      },
+      flags: [
+        {
+          kind: "objective",
+          label: "Objetivo de campaña no cumplido",
+          detail: "0 de 2 datos capturados (email y teléfono).",
+        },
+        {
+          kind: "flow",
+          label: "Flujo sin captura de lead",
+          detail:
+            "El flujo no incluye un paso para pedir contacto antes de derivar a la web.",
+        },
+      ],
+      dimensions: [
+        { label: "Objetivo", value: "No cumplido", intent: "bad" },
+        { label: "Datos", value: "0 / 2", intent: "bad" },
+        { label: "Interés", value: "Alto", intent: "warn" },
+      ],
+      improvement:
+        "Sumar al flujo: pedir email y teléfono antes de enviar el cupón, así el lead queda registrado.",
+      delta: "+27 pts estimado",
     },
   },
   {
@@ -176,22 +246,32 @@ export const CONVERSATIONS: Conversation[] = [
       },
     ],
     report: {
+      objective: {
+        source: "Meta Ads · Campaña Retargeting",
+        goal: "Cerrar la venta del carrito abandonado",
+        achieved: true,
+        detail: "Cerró la compra y registró el pedido #4821 en el sistema.",
+      },
       flags: [
         {
           kind: "ok",
           label: "Sin alucinaciones",
           detail: "Respuestas ancladas a stock y precios reales del catálogo.",
         },
+        {
+          kind: "ok",
+          label: "Flujo completo",
+          detail:
+            "Consulta → link de pago → confirmación con pedido real. Todo el flujo funcionó.",
+        },
       ],
-      pattern: "Respuesta precisa + cierre de venta verificado.",
-      patternIntent: "good",
       dimensions: [
         { label: "Resolución", value: "Completa", intent: "good" },
         { label: "Precisión", value: "Alta", intent: "good" },
-        { label: "Frustración", value: "Baja", intent: "good" },
+        { label: "Objetivo", value: "Cumplido", intent: "good" },
       ],
       improvement:
-        "Mantener: anclar el agente al stock real sube la conversión.",
+        "Mantener: anclar el agente al stock real y pedir el cierre sube la conversión.",
       delta: "patrón ganador",
     },
   },

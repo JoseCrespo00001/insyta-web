@@ -8,7 +8,9 @@ import {
   Check,
   MessageCircle,
   Scale,
+  Target,
   TrendingUp,
+  Workflow,
   X,
   Zap,
 } from "lucide-react";
@@ -45,6 +47,16 @@ const FLAG_STYLE: Record<
     box: "border-score-risk/30 bg-score-risk/5",
     text: "text-score-risk",
   },
+  flow: {
+    icon: Workflow,
+    box: "border-border bg-muted/40",
+    text: "text-foreground",
+  },
+  objective: {
+    icon: Target,
+    box: "border-score-critical/30 bg-score-critical/5",
+    text: "text-score-critical",
+  },
   ok: {
     icon: Check,
     box: "border-score-good/30 bg-score-good/5",
@@ -52,8 +64,30 @@ const FLAG_STYLE: Record<
   },
 };
 
-// Easing suave (easeOutExpo-ish) para una entrada más fluida.
-const EASE = [0.22, 1, 0.36, 1] as const;
+// Easing muy suave (easeOutExpo) para una entrada cinematográfica.
+const EASE = [0.16, 1, 0.3, 1] as const;
+
+// Scroll propio con easeInOutCubic: más largo y suave que el scroll nativo.
+function smoothScrollTo(targetY: number, duration = 1000) {
+  if (typeof window === "undefined") return;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const startY = window.scrollY;
+  const diff = targetY - startY;
+  if (reduce || Math.abs(diff) < 4) {
+    window.scrollTo(0, targetY);
+    return;
+  }
+  const ease = (t: number) =>
+    t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  let start: number | null = null;
+  const step = (ts: number) => {
+    if (start === null) start = ts;
+    const p = Math.min((ts - start) / duration, 1);
+    window.scrollTo(0, startY + diff * ease(p));
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
 
 function initials(name: string) {
   return name
@@ -75,9 +109,14 @@ export function ConversationExpediente({
 
   useEffect(() => {
     if (!conversation) return;
+    // Esperamos a que el panel crezca y recién ahí hacemos el paneo suave.
     const id = window.setTimeout(() => {
-      ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 220);
+      const el = ref.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const targetY = window.scrollY + rect.top - 96; // offset debajo del navbar
+      smoothScrollTo(targetY, 1100);
+    }, 420);
     return () => window.clearTimeout(id);
   }, [conversation]);
 
@@ -89,15 +128,30 @@ export function ConversationExpediente({
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
           exit={{ opacity: 0, height: 0 }}
-          transition={{ duration: 0.7, ease: EASE }}
+          transition={{
+            height: { duration: 1, ease: EASE },
+            opacity: { duration: 0.6, ease: EASE },
+          }}
           className="overflow-hidden"
-          style={{ perspective: 1400 }}
+          style={{ perspective: 1600 }}
         >
           <motion.div
             ref={ref}
-            initial={{ rotateX: 14, scale: 0.96, y: -20, opacity: 0 }}
-            animate={{ rotateX: 0, scale: 1, y: 0, opacity: 1 }}
-            transition={{ duration: 0.85, ease: EASE, delay: 0.12 }}
+            initial={{
+              rotateX: 10,
+              scale: 0.94,
+              y: 48,
+              opacity: 0,
+              filter: "blur(12px)",
+            }}
+            animate={{
+              rotateX: 0,
+              scale: 1,
+              y: 0,
+              opacity: 1,
+              filter: "blur(0px)",
+            }}
+            transition={{ duration: 1.2, ease: EASE, delay: 0.1 }}
             style={{
               transformStyle: "preserve-3d",
               transformOrigin: "top center",
@@ -105,8 +159,20 @@ export function ConversationExpediente({
             className="mx-auto mt-12 max-w-5xl rounded-[28px] border-4 border-border bg-card p-2 shadow-2xl md:p-3"
           >
             <div className="grid gap-3 rounded-2xl bg-background/50 p-3 md:grid-cols-2 md:p-4">
-              <ChatPane conversation={conversation} onClose={onClose} />
-              <ReportPane conversation={conversation} />
+              <motion.div
+                initial={{ opacity: 0, x: -28 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, ease: EASE, delay: 0.4 }}
+              >
+                <ChatPane conversation={conversation} onClose={onClose} />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: 28 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, ease: EASE, delay: 0.55 }}
+              >
+                <ReportPane conversation={conversation} />
+              </motion.div>
             </div>
           </motion.div>
         </motion.div>
@@ -154,7 +220,7 @@ function ChatPane({
         </button>
       </div>
 
-      <div className="mt-3 flex max-h-72 flex-col gap-2 overflow-y-auto pr-1">
+      <div className="mt-3 flex flex-1 flex-col justify-center gap-2.5">
         {conversation.chat.map((m, i) => (
           <div
             key={i}
@@ -211,6 +277,48 @@ function ReportPane({ conversation }: { conversation: Conversation }) {
           </div>
         ))}
       </div>
+
+      {/* Objetivo de campaña (si la conversación vino de una campaña) */}
+      {report.objective ? (
+        <div
+          className={cn(
+            "rounded-lg border p-3",
+            report.objective.achieved
+              ? "border-score-good/30 bg-score-good/5"
+              : "border-score-critical/30 bg-score-critical/5",
+          )}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <div
+              className={cn(
+                "flex items-center gap-2 text-xs font-semibold",
+                report.objective.achieved
+                  ? "text-score-good"
+                  : "text-score-critical",
+              )}
+            >
+              <Target className="size-3.5" />
+              Objetivo de campaña
+            </div>
+            <span
+              className={cn(
+                "inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                report.objective.achieved
+                  ? "bg-score-good/15 text-score-good"
+                  : "bg-score-critical/15 text-score-critical",
+              )}
+            >
+              {report.objective.achieved ? "Cumplido" : "No cumplido"}
+            </span>
+          </div>
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            {report.objective.source} · {report.objective.goal}
+          </p>
+          <p className="mt-1 text-sm text-foreground/90">
+            {report.objective.detail}
+          </p>
+        </div>
+      ) : null}
 
       {/* Problemas detectados */}
       <div className="space-y-2">
