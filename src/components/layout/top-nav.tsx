@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   AlertTriangle,
   Bell,
@@ -30,8 +30,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getInitials, STUB_USER } from "@/lib/auth/session";
+import { getInitials } from "@/lib/auth/session";
+import { useSessionUser } from "@/lib/auth/use-session";
 import { formatDateTime } from "@/lib/format";
+import { createClient } from "@/utils/supabase/client";
 import {
   NOTIFICATIONS,
   UNREAD_COUNT,
@@ -60,7 +62,15 @@ const island =
 
 export function TopNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
+  const user = useSessionUser();
+
+  async function handleLogout() {
+    await createClient().auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
     <header className="sticky top-0 z-40 flex items-center gap-3 px-4 py-3 md:px-6">
@@ -178,15 +188,15 @@ export function TopNav() {
             >
               <Avatar className="h-9 w-9">
                 <AvatarFallback className="bg-primary/15 text-xs font-semibold">
-                  {getInitials(STUB_USER.name)}
+                  {getInitials(user.name)}
                 </AvatarFallback>
               </Avatar>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="font-normal">
-              <p className="font-medium">{STUB_USER.name}</p>
-              <p className="text-xs text-muted-foreground">{STUB_USER.email}</p>
+              <p className="font-medium">{user.name}</p>
+              <p className="text-xs text-muted-foreground">{user.email}</p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
@@ -202,11 +212,9 @@ export function TopNav() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/login">
-                <LogOut className="h-4 w-4" />
-                Cerrar sesión
-              </Link>
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="h-4 w-4" />
+              Cerrar sesión
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

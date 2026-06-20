@@ -26,26 +26,26 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { STUB_PROJECTS, makeProjectId } from "@/lib/projects/stub";
-import type { Project } from "@/lib/projects/types";
+import { ApiError } from "@/lib/api";
+import { useCreateProject, useProjects } from "@/lib/queries";
 
 export function ProjectsView() {
-  // TODO(api): reemplazar por React Query contra GET/POST /api/v1/projects.
-  const [projects, setProjects] = React.useState<Project[]>(STUB_PROJECTS);
+  const { data: projects = [], isLoading } = useProjects();
+  const createProject = useCreateProject();
 
   function addProject(name: string) {
-    setProjects((prev) => [
+    createProject.mutate(
+      { name },
       {
-        publicId: makeProjectId(),
-        name,
-        agentCount: 0,
-        conversationCount: 0,
-        score: null,
-        updatedAt: new Date().toISOString(),
+        onSuccess: () => toast.success(`Proyecto "${name}" creado`),
+        onError: (err) =>
+          toast.error(
+            err instanceof ApiError && err.status === 401
+              ? "Iniciá sesión para crear proyectos"
+              : `No se pudo crear el proyecto: ${(err as Error).message}`,
+          ),
       },
-      ...prev,
-    ]);
-    toast.success(`Proyecto "${name}" creado`);
+    );
   }
 
   return (
@@ -60,7 +60,13 @@ export function ProjectsView() {
         <NewProjectDialog onCreate={addProject} />
       </div>
 
-      {projects.length === 0 ? (
+      {isLoading ? (
+        <Card>
+          <CardContent className="py-16 text-center text-muted-foreground">
+            Cargando proyectos…
+          </CardContent>
+        </Card>
+      ) : projects.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-4 py-16 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15">

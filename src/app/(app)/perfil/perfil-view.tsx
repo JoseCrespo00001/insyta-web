@@ -17,7 +17,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { getInitials, STUB_USER } from "@/lib/auth/session";
+import { getInitials } from "@/lib/auth/session";
+import { useSessionUser } from "@/lib/auth/use-session";
 import { cn } from "@/lib/utils";
 
 const SECTIONS = [
@@ -77,6 +78,7 @@ export function PerfilView() {
 }
 
 function PerfilSection() {
+  const user = useSessionUser();
   return (
     <Card>
       <CardHeader>
@@ -89,7 +91,7 @@ function PerfilSection() {
         <div className="flex items-center gap-4">
           <Avatar className="h-16 w-16">
             <AvatarFallback className="bg-primary/15 text-lg font-semibold">
-              {getInitials(STUB_USER.name)}
+              {getInitials(user.name)}
             </AvatarFallback>
           </Avatar>
           <Button variant="outline" size="sm">
@@ -100,19 +102,35 @@ function PerfilSection() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="name">Nombre</Label>
-            <Input id="name" defaultValue={STUB_USER.name} />
+            <Input key={`n-${user.name}`} id="name" defaultValue={user.name} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" defaultValue={STUB_USER.email} />
+            <Input
+              key={`e-${user.email}`}
+              id="email"
+              type="email"
+              defaultValue={user.email}
+              disabled
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="org">Organización</Label>
-            <Input id="org" defaultValue={STUB_USER.orgName} />
+            <Input
+              key={`o-${user.orgName}`}
+              id="org"
+              defaultValue={user.orgName}
+              disabled
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="role">Rol</Label>
-            <Input id="role" defaultValue="Owner" disabled />
+            <Input
+              key={`r-${user.role}`}
+              id="role"
+              defaultValue={user.role || "owner"}
+              disabled
+            />
           </div>
         </div>
 

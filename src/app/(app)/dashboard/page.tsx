@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -25,41 +27,40 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatDate, formatDateTime } from "@/lib/format";
-import {
-  DASHBOARD_OVERVIEW,
-  PROJECT_SUMMARIES,
-  RECENT_ACTIVITY,
-  type ActivityKind,
-} from "@/lib/projects/dashboard";
+import { useDashboard } from "@/lib/queries";
 
-const OVERVIEW = [
-  {
-    label: "Conversaciones evaluadas",
-    value: DASHBOARD_OVERVIEW.conversationsEvaluated,
-    icon: MessageSquare,
-    sub: `+${DASHBOARD_OVERVIEW.conversationsThisWeek} esta semana`,
-  },
-  {
-    label: "Score promedio",
-    value: DASHBOARD_OVERVIEW.avgScore,
-    icon: TrendingUp,
-    delta: DASHBOARD_OVERVIEW.avgScoreDelta,
-  },
-  {
-    label: "Auditorías corridas",
-    value: DASHBOARD_OVERVIEW.auditsRun,
-    icon: ClipboardList,
-    sub: DASHBOARD_OVERVIEW.auditsRunning
-      ? `${DASHBOARD_OVERVIEW.auditsRunning} en curso`
-      : "Ninguna en curso",
-  },
-  {
-    label: "Mejoras aplicadas",
-    value: DASHBOARD_OVERVIEW.improvementsApplied,
-    icon: Sparkles,
-    sub: `${DASHBOARD_OVERVIEW.suggestionsOpen} sugerencias abiertas`,
-  },
-] as const;
+type ActivityKind = "audit" | "improvement" | "alert" | "upload";
+
+type DashboardData = {
+  overview: {
+    conversationsEvaluated: number;
+    avgScore: number | null;
+    auditsRun: number;
+    improvementsApplied: number;
+    suggestionsOpen: number;
+    satisfaction: {
+      satisfecho?: number;
+      neutral?: number;
+      insatisfecho?: number;
+    };
+  };
+  projectSummaries: Array<{
+    publicId: string;
+    name: string;
+    score: number | null;
+    conversations: number;
+    flujos: number;
+    suggestionsOpen: number;
+    auditStatus: "idle" | "running";
+    lastAuditAt: string | null;
+  }>;
+  recentActivity: Array<{
+    id: string;
+    kind: ActivityKind;
+    text: string;
+    at: string;
+  }>;
+};
 
 const SAT_META = [
   { key: "satisfecho", label: "Satisfecho", bar: "bg-score-good" },
@@ -91,17 +92,59 @@ function ScoreDelta({ delta }: { delta: number | null }) {
   );
 }
 
-export default function DashboardPage() {
-  const running = PROJECT_SUMMARIES.filter((p) => p.auditStatus === "running");
+const EMPTY: DashboardData = {
+  overview: {
+    conversationsEvaluated: 0,
+    avgScore: null,
+    auditsRun: 0,
+    improvementsApplied: 0,
+    suggestionsOpen: 0,
+    satisfaction: {},
+  },
+  projectSummaries: [],
+  recentActivity: [],
+};
 
-  const sat = DASHBOARD_OVERVIEW.satisfaction;
+export default function DashboardPage() {
+  const { data, isLoading } = useDashboard();
+  const d = (data as DashboardData | undefined) ?? EMPTY;
+  const ov = d.overview;
+
+  const overviewCards = [
+    {
+      label: "Conversaciones evaluadas",
+      value: ov.conversationsEvaluated,
+      icon: MessageSquare,
+      sub: "evaluadas en total",
+    },
+    {
+      label: "Score promedio",
+      value: ov.avgScore ?? "—",
+      icon: TrendingUp,
+      delta: null as number | null,
+    },
+    {
+      label: "Auditorías corridas",
+      value: ov.auditsRun,
+      icon: ClipboardList,
+      sub: `${d.projectSummaries.filter((p) => p.auditStatus === "running").length} en curso`,
+    },
+    {
+      label: "Mejoras aplicadas",
+      value: ov.improvementsApplied,
+      icon: Sparkles,
+      sub: `${ov.suggestionsOpen} sugerencias abiertas`,
+    },
+  ] as const;
+
+  const running = d.projectSummaries.filter((p) => p.auditStatus === "running");
+  const sat = {
+    satisfecho: ov.satisfaction.satisfecho ?? 0,
+    neutral: ov.satisfaction.neutral ?? 0,
+    insatisfecho: ov.satisfaction.insatisfecho ?? 0,
+  };
   const satTotal = sat.satisfecho + sat.neutral + sat.insatisfecho || 1;
-  const totalAlerts = PROJECT_SUMMARIES.reduce((a, p) => a + p.openAlerts, 0);
-  const totalSuggestions = PROJECT_SUMMARIES.reduce(
-    (a, p) => a + p.suggestionsOpen,
-    0,
-  );
-  const dropping = PROJECT_SUMMARIES.filter((p) => (p.scoreDelta ?? 0) < 0);
+  const totalSuggestions = ov.suggestionsOpen;
 
   return (
     <div className="space-y-6">
@@ -122,7 +165,7 @@ export default function DashboardPage() {
 
       {/* Overview */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {OVERVIEW.map((item) => (
+        {overviewCards.map((item) => (
           <Card key={item.label}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardDescription>{item.label}</CardDescription>
@@ -130,10 +173,12 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-1">
               <p className="text-3xl font-bold tracking-tight">{item.value}</p>
-              {"delta" in item ? (
+              {"delta" in item && item.delta !== null ? (
                 <ScoreDelta delta={item.delta} />
               ) : (
-                <p className="text-xs text-muted-foreground">{item.sub}</p>
+                <p className="text-xs text-muted-foreground">
+                  {"sub" in item ? item.sub : ""}
+                </p>
               )}
             </CardContent>
           </Card>
@@ -180,14 +225,6 @@ export default function DashboardPage() {
               Requiere atención
             </h2>
             <div className="space-y-2">
-              {totalAlerts > 0 ? (
-                <AttentionRow
-                  icon={Bell}
-                  intent="bad"
-                  text={`${totalAlerts} alerta${totalAlerts > 1 ? "s" : ""} abierta${totalAlerts > 1 ? "s" : ""}`}
-                  href="/projects"
-                />
-              ) : null}
               {totalSuggestions > 0 ? (
                 <AttentionRow
                   icon={Sparkles}
@@ -195,23 +232,13 @@ export default function DashboardPage() {
                   text={`${totalSuggestions} sugerencias de mejora sin revisar`}
                   href="/improvements"
                 />
-              ) : null}
-              {dropping.map((p) => (
-                <AttentionRow
-                  key={p.publicId}
-                  icon={TrendingDown}
-                  intent="bad"
-                  text={`${p.name} · score ${p.scoreDelta} esta semana`}
-                  href={`/projects/${p.publicId}`}
-                />
-              ))}
-              {totalAlerts === 0 &&
-              totalSuggestions === 0 &&
-              dropping.length === 0 ? (
+              ) : (
                 <p className="text-sm text-muted-foreground">
-                  Todo en orden. No hay nada que requiera atención.
+                  {isLoading
+                    ? "Cargando…"
+                    : "Todo en orden. No hay nada que requiera atención."}
                 </p>
-              ) : null}
+              )}
             </div>
           </CardContent>
         </Card>
@@ -225,22 +252,6 @@ export default function DashboardPage() {
               <Loader2 className="h-4 w-4 animate-spin text-primary" />
               {running.length} auditoría{running.length > 1 ? "s" : ""} en curso
             </div>
-            {running.map((p) => (
-              <div key={p.publicId} className="space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span>{p.name}</span>
-                  <span className="text-muted-foreground">
-                    {p.auditProgress}%
-                  </span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary"
-                    style={{ width: `${p.auditProgress ?? 0}%` }}
-                  />
-                </div>
-              </div>
-            ))}
           </CardContent>
         </Card>
       ) : null}
@@ -249,7 +260,7 @@ export default function DashboardPage() {
       <section className="space-y-3">
         <h2 className="text-sm font-semibold">Por proyecto</h2>
         <div className="grid gap-4 lg:grid-cols-2">
-          {PROJECT_SUMMARIES.map((p) => (
+          {d.projectSummaries.map((p) => (
             <Card key={p.publicId}>
               <CardHeader>
                 <div className="flex items-start justify-between gap-2">
@@ -261,10 +272,7 @@ export default function DashboardPage() {
                       {p.name}
                     </Link>
                   </CardTitle>
-                  <div className="flex items-center gap-2">
-                    <ScoreDelta delta={p.scoreDelta} />
-                    <ScoreBadge score={p.score} />
-                  </div>
+                  <ScoreBadge score={p.score} />
                 </div>
                 <CardDescription>
                   {p.auditStatus === "running" ? (
@@ -280,7 +288,7 @@ export default function DashboardPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-3">
                   <Metric
                     icon={MessageSquare}
                     value={p.conversations}
@@ -289,14 +297,8 @@ export default function DashboardPage() {
                   <Metric icon={Workflow} value={p.flujos} label="Flujos" />
                   <Metric
                     icon={Sparkles}
-                    value={p.improvementsApplied}
-                    label="Mejoras"
-                  />
-                  <Metric
-                    icon={Bell}
-                    value={p.openAlerts}
-                    label="Alertas"
-                    highlight={p.openAlerts > 0}
+                    value={p.suggestionsOpen}
+                    label="Sugerencias"
                   />
                 </div>
                 {p.suggestionsOpen > 0 ? (
@@ -310,6 +312,15 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           ))}
+          {d.projectSummaries.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center text-sm text-muted-foreground">
+                {isLoading
+                  ? "Cargando proyectos…"
+                  : "Todavía no hay proyectos. Creá uno y subí un CSV."}
+              </CardContent>
+            </Card>
+          ) : null}
         </div>
       </section>
 
@@ -318,22 +329,28 @@ export default function DashboardPage() {
         <h2 className="text-sm font-semibold">Actividad reciente</h2>
         <Card>
           <CardContent className="divide-y p-0">
-            {RECENT_ACTIVITY.map((a) => {
-              const Icon = ACTIVITY_ICON[a.kind];
-              return (
-                <div key={a.id} className="flex items-start gap-3 p-4">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
-                    <Icon className="h-4 w-4 text-muted-foreground" />
+            {d.recentActivity.length === 0 ? (
+              <p className="p-4 text-sm text-muted-foreground">
+                Sin actividad aún.
+              </p>
+            ) : (
+              d.recentActivity.map((a) => {
+                const Icon = ACTIVITY_ICON[a.kind] ?? Bell;
+                return (
+                  <div key={a.id} className="flex items-start gap-3 p-4">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
+                      <Icon className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm">{a.text}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDateTime(a.at)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm">{a.text}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDateTime(a.at)}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </CardContent>
         </Card>
       </section>
