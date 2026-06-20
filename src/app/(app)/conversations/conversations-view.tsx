@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import {
+  ChevronDown,
   FileSpreadsheet,
   MessagesSquare,
   RefreshCw,
@@ -55,6 +56,11 @@ export function ConversationsView() {
   const { data, isLoading, refetch, isFetching } = useGlobalConversations();
   const [viewing, setViewing] = React.useState<Conversation | null>(null);
   const [query, setQuery] = React.useState("");
+  const [collapsed, setCollapsed] = React.useState<Record<string, boolean>>({});
+
+  function toggleCollapse(id: string) {
+    setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
 
   // Mapeo del payload del backend al contrato UploadGroup del front. El
   // transcript de cada conversación se hidrata en el workspace al abrirla.
@@ -180,14 +186,25 @@ export function ConversationsView() {
               <Card key={group.id} className="overflow-hidden">
                 {/* Cabecera del grupo de CSV */}
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-muted/40 px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
+                  <button
+                    type="button"
+                    onClick={() => toggleCollapse(group.id)}
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                    aria-expanded={!collapsed[group.id]}
+                  >
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+                        collapsed[group.id] && "-rotate-90",
+                      )}
+                    />
+                    <FileSpreadsheet className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <span className="font-medium">{group.filename}</span>
-                    <span className="text-sm text-muted-foreground">
+                    <span className="truncate text-sm text-muted-foreground">
                       · cargado {formatDateTime(group.loadedAt)} ·{" "}
                       {group.conversations.length} conversaciones
                     </span>
-                  </div>
+                  </button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -202,42 +219,44 @@ export function ConversationsView() {
                 </div>
 
                 {/* Tabla de conversaciones */}
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Contacto</TableHead>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Mensajes</TableHead>
-                      <TableHead>Satisfacción</TableHead>
-                      <TableHead className="text-right">Score</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {group.conversations.map((c) => (
-                      <TableRow
-                        key={c.id}
-                        className="cursor-pointer"
-                        onClick={() => setViewing(c)}
-                      >
-                        <TableCell className="font-medium">
-                          {c.contactName}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          #{c.externalId}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {c.messageCount}
-                        </TableCell>
-                        <TableCell>
-                          <SatisfactionBadge value={c.satisfaction} />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <ScoreBadge score={c.score} />
-                        </TableCell>
+                {collapsed[group.id] ? null : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Contacto</TableHead>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Mensajes</TableHead>
+                        <TableHead>Satisfacción</TableHead>
+                        <TableHead className="text-right">Score</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {group.conversations.map((c) => (
+                        <TableRow
+                          key={c.id}
+                          className="cursor-pointer"
+                          onClick={() => setViewing(c)}
+                        >
+                          <TableCell className="font-medium">
+                            {c.contactName}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            #{c.externalId}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {c.messageCount}
+                          </TableCell>
+                          <TableCell>
+                            <SatisfactionBadge value={c.satisfaction} />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <ScoreBadge score={c.score} />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </Card>
             ))}
           </section>
