@@ -6,7 +6,6 @@ import {
   MessagesSquare,
   RefreshCw,
   Search,
-  Trash2,
 } from "lucide-react";
 
 import { ConversationWorkspace } from "@/components/shared/conversation-workspace";
@@ -23,7 +22,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDateTime } from "@/lib/format";
-import { SAMPLE_UPLOAD_GROUPS } from "@/lib/projects/mock";
+import { makeConversationStub } from "@/lib/projects/empty";
+import { useGlobalConversations } from "@/lib/queries";
 import type {
   Conversation,
   Satisfaction,
@@ -52,24 +52,34 @@ function SatisfactionBadge({ value }: { value: Satisfaction | null }) {
 }
 
 export function ConversationsView() {
-  // TODO(api): reemplazar por GET de uploads/conversaciones del backend.
-  const [groups, setGroups] =
-    React.useState<UploadGroup[]>(SAMPLE_UPLOAD_GROUPS);
+  const { data, isLoading, refetch, isFetching } = useGlobalConversations();
   const [viewing, setViewing] = React.useState<Conversation | null>(null);
   const [query, setQuery] = React.useState("");
 
-  function removeGroup(id: string) {
-    setGroups((prev) => prev.filter((g) => g.id !== id));
-  }
-
-  function refreshGroup(id: string) {
-    // Mock: el backend re-parsea el CSV. Acá solo actualizamos la fecha.
-    setGroups((prev) =>
-      prev.map((g) =>
-        g.id === id ? { ...g, loadedAt: new Date().toISOString() } : g,
-      ),
-    );
-  }
+  // Mapeo del payload del backend al contrato UploadGroup del front. El
+  // transcript de cada conversación se hidrata en el workspace al abrirla.
+  const groups: UploadGroup[] = React.useMemo(
+    () =>
+      (data ?? []).map((g) => ({
+        id: g.id,
+        projectName: g.project_name,
+        filename: g.filename,
+        loadedAt: g.loaded_at,
+        conversations: g.conversations.map((c) => ({
+          ...makeConversationStub({
+            id: c.public_id,
+            externalId: c.external_id,
+            contactName: c.contact_name,
+            preview: c.preview,
+            score: c.score,
+          }),
+          messageCount: c.message_count,
+          satisfaction: (c.satisfaction as Satisfaction | null) ?? null,
+          resolved: c.resolved,
+        })),
+      })),
+    [data],
+  );
 
   // Filtro: por texto de la conversación, nombre del contacto, número, o CSV.
   const q = query.trim().toLowerCase();
@@ -136,7 +146,13 @@ export function ConversationsView() {
         </div>
       </div>
 
-      {groups.length === 0 ? (
+      {isLoading ? (
+        <Card>
+          <CardContent className="py-16 text-center text-sm text-muted-foreground">
+            Cargando conversaciones…
+          </CardContent>
+        </Card>
+      ) : groups.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-4 py-16 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15">
@@ -172,24 +188,17 @@ export function ConversationsView() {
                       {group.conversations.length} conversaciones
                     </span>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => refreshGroup(group.id)}
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                      Actualizar
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeGroup(group.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Eliminar
-                    </Button>
-                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isFetching}
+                    onClick={() => refetch()}
+                  >
+                    <RefreshCw
+                      className={cn("h-4 w-4", isFetching && "animate-spin")}
+                    />
+                    Actualizar
+                  </Button>
                 </div>
 
                 {/* Tabla de conversaciones */}
@@ -217,7 +226,7 @@ export function ConversationsView() {
                           #{c.externalId}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {c.messageCount} ({c.userMessages}/{c.botMessages})
+                          {c.messageCount}
                         </TableCell>
                         <TableCell>
                           <SatisfactionBadge value={c.satisfaction} />

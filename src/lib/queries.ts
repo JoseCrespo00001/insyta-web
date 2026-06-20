@@ -181,6 +181,31 @@ export function useConversations(projectId: string) {
   });
 }
 
+export type GlobalUploadGroup = {
+  id: string;
+  project_name: string;
+  filename: string;
+  loaded_at: string;
+  conversations: Array<{
+    public_id: string;
+    external_id: string;
+    contact_name: string | null;
+    preview: string | null;
+    message_count: number;
+    score: number | null;
+    satisfaction: string | null;
+    resolved: boolean | null;
+  }>;
+};
+
+// Vista global /conversations: todos los CSV del tenant con sus conversaciones.
+export function useGlobalConversations() {
+  return useQuery({
+    queryKey: ["conversations", "all"],
+    queryFn: () => api.get<GlobalUploadGroup[]>("/api/v1/conversations"),
+  });
+}
+
 export type ConversationDetail = {
   public_id: string;
   external_id: string;
