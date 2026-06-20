@@ -339,6 +339,37 @@ export function useUpdateImprovement() {
   });
 }
 
+// ── Settings · API key del proveedor LLM ────────────────────────────────────
+export type LlmKeyStatus = {
+  provider: string;
+  configured: boolean;
+  masked: string | null;
+};
+
+export function useLlmKey() {
+  return useQuery({
+    queryKey: ["llm-key"],
+    queryFn: () => api.get<LlmKeyStatus>("/api/v1/settings/llm-key"),
+  });
+}
+
+export function useSetLlmKey() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (apiKey: string) =>
+      api.put<LlmKeyStatus>("/api/v1/settings/llm-key", { apiKey }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["llm-key"] }),
+  });
+}
+
+export function useDeleteLlmKey() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.del<LlmKeyStatus>("/api/v1/settings/llm-key"),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["llm-key"] }),
+  });
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────
 export function useDashboard() {
   return useQuery({

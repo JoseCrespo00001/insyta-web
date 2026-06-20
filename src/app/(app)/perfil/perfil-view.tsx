@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { getInitials } from "@/lib/auth/session";
 import { useSessionUser } from "@/lib/auth/use-session";
+import { useDeleteLlmKey, useLlmKey, useSetLlmKey } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
 const SECTIONS = [
@@ -158,6 +159,99 @@ const EXTENSIONS = [
   { name: "Slack", detail: "Alertas en tu canal", connected: false },
 ];
 
+function ApiKeyCard() {
+  const { data: status, isLoading } = useLlmKey();
+  const setKey = useSetLlmKey();
+  const deleteKey = useDeleteLlmKey();
+  const [value, setValue] = React.useState("");
+
+  function save() {
+    const key = value.trim();
+    if (key.length < 8) {
+      toast.error("Pegá una API key válida");
+      return;
+    }
+    setKey.mutate(key, {
+      onSuccess: () => {
+        toast.success("API key guardada");
+        setValue("");
+      },
+      onError: (e) =>
+        toast.error(
+          e instanceof Error ? e.message : "No se pudo guardar la key",
+        ),
+    });
+  }
+
+  function remove() {
+    deleteKey.mutate(undefined, {
+      onSuccess: () => toast.success("API key eliminada"),
+    });
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">API key — Anthropic</CardTitle>
+        <CardDescription>
+          Necesaria para correr el judge de las auditorías. Se guarda cifrada;
+          nunca se muestra completa.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Cargando…</p>
+        ) : status?.configured ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-score-good" />
+              <span className="text-sm">
+                Configurada ·{" "}
+                <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+                  {status.masked}
+                </code>
+              </span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              disabled={deleteKey.isPending}
+              onClick={remove}
+            >
+              Eliminar
+            </Button>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Todavía no cargaste una API key. Las auditorías van a fallar hasta
+            que la pongas.
+          </p>
+        )}
+
+        <div className="space-y-2">
+          <Label htmlFor="anthropic-key">
+            {status?.configured ? "Reemplazar key" : "Pegá tu API key"}
+          </Label>
+          <div className="flex gap-2">
+            <Input
+              id="anthropic-key"
+              type="password"
+              placeholder="sk-ant-…"
+              autoComplete="off"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+            />
+            <Button onClick={save} disabled={setKey.isPending || !value.trim()}>
+              {setKey.isPending ? "Guardando…" : "Guardar"}
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function ExtensionesSection() {
   return (
     <div className="space-y-4">
@@ -167,6 +261,9 @@ function ExtensionesSection() {
           Conectá tus plataformas para ingestar conversaciones.
         </p>
       </div>
+
+      <ApiKeyCard />
+
       <div className="grid gap-4 sm:grid-cols-2">
         {EXTENSIONS.map((e) => (
           <Card key={e.name}>
