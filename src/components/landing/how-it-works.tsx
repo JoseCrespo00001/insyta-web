@@ -1,15 +1,98 @@
+"use client";
+
+import {
+  Activity,
+  BadgeCheck,
+  Gauge,
+  Plug,
+  ScanSearch,
+  Sparkles,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Plug, Gauge, ScanSearch, Repeat } from "lucide-react";
 
 import { Reveal } from "@/components/landing/reveal";
+import RadialOrbitalTimeline, {
+  type TimelineItem,
+} from "@/components/ui/radial-orbital-timeline";
 
-type Step = { step: string; title: string; description: string };
-
-const ICONS = [Plug, Gauge, ScanSearch, Repeat];
+// Loop de Insyta como timeline orbital (detectar → diagnosticar → mejorar → verificar).
+const TIMELINE: TimelineItem[] = [
+  {
+    id: 1,
+    title: "Conectar",
+    date: "En minutos",
+    category: "Conexión",
+    icon: Plug,
+    status: "completed",
+    energy: 100,
+    relatedIds: [2, 6],
+    content:
+      "Conectá WhatsApp, Instagram, WATI o el SDK. Sin tocar tu bot, en minutos.",
+  },
+  {
+    id: 2,
+    title: "Evaluar",
+    date: "Tiempo real",
+    category: "Evaluación",
+    icon: Gauge,
+    status: "completed",
+    energy: 95,
+    relatedIds: [1, 3],
+    content:
+      "Un LLM-as-judge puntúa cada conversación de 0 a 100: resolución, tono, satisfacción y frustración.",
+  },
+  {
+    id: 3,
+    title: "Detectar",
+    date: "Continuo",
+    category: "Monitoreo",
+    icon: Activity,
+    status: "in-progress",
+    energy: 82,
+    relatedIds: [2, 4],
+    content:
+      "Control estadístico de procesos (SPC): detectamos desvíos y avisamos cuando el agente empieza a degradarse.",
+  },
+  {
+    id: 4,
+    title: "Diagnosticar",
+    date: "Semanal",
+    category: "Diagnóstico",
+    icon: ScanSearch,
+    status: "in-progress",
+    energy: 74,
+    relatedIds: [3, 5],
+    content:
+      "Agrupamos las conversaciones malas por tema: alucinaciones, fallos de automatización y fugas de flujo.",
+  },
+  {
+    id: 5,
+    title: "Mejorar",
+    date: "Semanal",
+    category: "Optimización",
+    icon: Sparkles,
+    status: "pending",
+    energy: 66,
+    relatedIds: [4, 6],
+    content:
+      "Proponemos cambios al prompt y al flujo, validados con regresión semántica antes de aplicarlos.",
+  },
+  {
+    id: 6,
+    title: "Verificar",
+    date: "14 días",
+    category: "Verificación",
+    icon: BadgeCheck,
+    status: "pending",
+    energy: 88,
+    relatedIds: [5, 1],
+    content:
+      "Medimos el impacto real con el delta de score a 14 días y cerramos el loop.",
+  },
+];
 
 export function HowItWorks() {
   const t = useTranslations("howItWorks");
-  const steps = t.raw("steps") as Step[];
 
   return (
     <section id="como-funciona" className="py-24">
@@ -24,29 +107,12 @@ export function HowItWorks() {
           <p className="mt-4 text-balance text-lg text-muted-foreground">
             {t("subtitle")}
           </p>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Tocá cada etapa del loop para ver el detalle y sus conexiones.
+          </p>
         </Reveal>
 
-        <div className="mt-16 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {steps.map((s, i) => {
-            const Icon = ICONS[i] ?? Plug;
-            return (
-              <Reveal key={s.step} delay={i * 0.08}>
-                <div className="group relative h-full rounded-2xl border border-border bg-card p-6 transition-colors hover:border-primary/40">
-                  <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Icon className="size-5" />
-                  </div>
-                  <span className="mt-5 block font-mono text-xs text-muted-foreground">
-                    {s.step}
-                  </span>
-                  <h3 className="mt-1 text-lg font-semibold">{s.title}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {s.description}
-                  </p>
-                </div>
-              </Reveal>
-            );
-          })}
-        </div>
+        <RadialOrbitalTimeline timelineData={TIMELINE} />
       </div>
     </section>
   );
