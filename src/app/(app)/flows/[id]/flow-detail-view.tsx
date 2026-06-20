@@ -157,40 +157,44 @@ export function FlowDetailView({ flowId }: { flowId: string }) {
         </div>
       ) : (
         <div className="grid gap-5 lg:grid-cols-2">
-          {/* Izquierda: grafo + JSON */}
-          <Tabs defaultValue="grafo" className="space-y-3">
-            <TabsList>
-              <TabsTrigger value="grafo">Grafo</TabsTrigger>
-              <TabsTrigger value="json">JSON</TabsTrigger>
-            </TabsList>
-            <TabsContent value="grafo">
-              <FlujoGraph flujo={flujo} />
-            </TabsContent>
-            <TabsContent value="json" className="space-y-3">
-              <textarea
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                spellCheck={false}
-                className="min-h-[70vh] w-full resize-y rounded-md border bg-muted p-4 font-mono text-xs leading-relaxed"
-              />
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setDraft(flujo.json ?? "")}
-                >
-                  Revertir
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={saveJson}
-                  disabled={updateFlow.isPending || draft === flujo.json}
-                >
-                  {updateFlow.isPending ? "Guardando…" : "Guardar JSON"}
-                </Button>
-              </div>
-            </TabsContent>
-          </Tabs>
+          {/* Izquierda: grafo + JSON (toggle dentro de la card) */}
+          <Card>
+            <CardContent className="p-3">
+              <Tabs defaultValue="grafo" className="space-y-3">
+                <TabsList>
+                  <TabsTrigger value="grafo">Grafo</TabsTrigger>
+                  <TabsTrigger value="json">JSON</TabsTrigger>
+                </TabsList>
+                <TabsContent value="grafo">
+                  <FlujoGraph flujo={flujo} />
+                </TabsContent>
+                <TabsContent value="json" className="space-y-3">
+                  <textarea
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    spellCheck={false}
+                    className="min-h-[70vh] w-full resize-y rounded-md border bg-muted p-4 font-mono text-xs leading-relaxed"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDraft(flujo.json ?? "")}
+                    >
+                      Revertir
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={saveJson}
+                      disabled={updateFlow.isPending || draft === flujo.json}
+                    >
+                      {updateFlow.isPending ? "Guardando…" : "Guardar JSON"}
+                    </Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
 
           {/* Derecha: probar + sugerencias + mejoras */}
           <div className="space-y-5">
