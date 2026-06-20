@@ -157,25 +157,31 @@ export function FlowDetailView({ flowId }: { flowId: string }) {
         </div>
       ) : (
         <div className="grid gap-5 lg:grid-cols-2">
-          {/* Izquierda: grafo + JSON (toggle dentro de la card) */}
-          <Card>
-            <CardContent className="p-3">
-              <Tabs defaultValue="grafo" className="space-y-3">
-                <TabsList>
+          {/* Izquierda: grafo + JSON (toggle dentro de la card, llena la altura) */}
+          <Card className="flex h-[85vh] flex-col">
+            <CardContent className="flex min-h-0 flex-1 flex-col p-3">
+              <Tabs
+                defaultValue="grafo"
+                className="flex min-h-0 flex-1 flex-col gap-3"
+              >
+                <TabsList className="w-fit">
                   <TabsTrigger value="grafo">Grafo</TabsTrigger>
                   <TabsTrigger value="json">JSON</TabsTrigger>
                 </TabsList>
-                <TabsContent value="grafo">
-                  <FlujoGraph flujo={flujo} />
+                <TabsContent value="grafo" className="min-h-0 flex-1">
+                  <FlujoGraph flujo={flujo} className="h-full" />
                 </TabsContent>
-                <TabsContent value="json" className="space-y-3">
+                <TabsContent
+                  value="json"
+                  className="flex min-h-0 flex-1 flex-col gap-3"
+                >
                   <textarea
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     spellCheck={false}
-                    className="min-h-[70vh] w-full resize-y rounded-md border bg-muted p-4 font-mono text-xs leading-relaxed"
+                    className="min-h-0 w-full flex-1 resize-none rounded-md border bg-muted p-4 font-mono text-xs leading-relaxed"
                   />
-                  <div className="flex justify-end gap-2">
+                  <div className="flex shrink-0 justify-end gap-2">
                     <Button
                       variant="outline"
                       size="sm"

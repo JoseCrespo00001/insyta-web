@@ -12,6 +12,7 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import type { Flujo } from "@/lib/projects/types";
+import { cn } from "@/lib/utils";
 
 const TYPE_ACCENT: Record<string, string> = {
   Agent: "hsl(137 72% 66%)",
@@ -186,14 +187,27 @@ function buildGraph(jsonStr: string): { nodes: Node[]; edges: Edge[] } | null {
   return { nodes, edges };
 }
 
-export function FlujoGraph({ flujo }: { flujo: Flujo }) {
+export function FlujoGraph({
+  flujo,
+  className,
+}: {
+  flujo: Flujo;
+  className?: string;
+}) {
   const graph = React.useMemo(() => buildGraph(flujo.json ?? ""), [flujo.json]);
+  // Si el caller pasa className (ej. h-full) usa eso; si no, alto fijo 78vh.
+  const sizing = className
+    ? { className: cn("w-full", className), style: undefined }
+    : { className: "w-full", style: { height: "78vh" } as React.CSSProperties };
 
   if (!graph) {
     return (
       <div
-        style={{ height: "78vh" }}
-        className="flex w-full items-center justify-center rounded-md border bg-[hsl(215_100%_5%)] text-sm text-muted-foreground"
+        style={sizing.style}
+        className={cn(
+          "flex items-center justify-center rounded-md border bg-[hsl(215_100%_5%)] text-sm text-muted-foreground",
+          sizing.className,
+        )}
       >
         No se pudo leer el grafo del flujo (JSON sin nodos).
       </div>
@@ -202,8 +216,11 @@ export function FlujoGraph({ flujo }: { flujo: Flujo }) {
 
   return (
     <div
-      style={{ height: "78vh" }}
-      className="w-full overflow-hidden rounded-md border bg-[hsl(215_100%_5%)]"
+      style={sizing.style}
+      className={cn(
+        "overflow-hidden rounded-md border bg-[hsl(215_100%_5%)]",
+        sizing.className,
+      )}
     >
       <ReactFlow
         nodes={graph.nodes}
