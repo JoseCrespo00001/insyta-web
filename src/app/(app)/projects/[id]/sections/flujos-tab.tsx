@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { ArrowLeft, Eye, Trash2, Upload, Workflow } from "lucide-react";
+import Link from "next/link";
+import { Eye, Trash2, Upload, Workflow } from "lucide-react";
 import { toast } from "sonner";
 
-import { FlujoGraph } from "./flujo-graph";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,15 +14,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "@/lib/api";
 import { formatBytes, formatDate } from "@/lib/format";
-import {
-  useCreateFlow,
-  useDeleteFlow,
-  useFlow,
-  useUpdateFlow,
-} from "@/lib/queries";
+import { useCreateFlow, useDeleteFlow } from "@/lib/queries";
 import type { Flujo } from "@/lib/projects/types";
 
 export function FlujosTab({
@@ -33,7 +27,6 @@ export function FlujosTab({
   projectId: string;
 }) {
   const fileRef = React.useRef<HTMLInputElement>(null);
-  const [viewingId, setViewingId] = React.useState<string | null>(null);
   const createFlow = useCreateFlow(projectId);
   const deleteFlow = useDeleteFlow(projectId);
 
@@ -75,16 +68,6 @@ export function FlujosTab({
       onError: (err) =>
         toast.error(`No se pudo eliminar: ${(err as Error).message}`),
     });
-  }
-
-  if (viewingId) {
-    return (
-      <FlujoDetail
-        flowId={viewingId}
-        projectId={projectId}
-        onBack={() => setViewingId(null)}
-      />
-    );
   }
 
   return (
@@ -136,13 +119,11 @@ export function FlujosTab({
               </CardHeader>
               <CardContent />
               <CardFooter className="gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setViewingId(flujo.id)}
-                >
-                  <Eye className="h-4 w-4" />
-                  Ver flujo
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/flows/${flujo.id}`}>
+                    <Eye className="h-4 w-4" />
+                    Ver flujo
+                  </Link>
                 </Button>
                 <Button
                   variant="ghost"
@@ -157,107 +138,6 @@ export function FlujosTab({
             </Card>
           ))}
         </div>
-      )}
-    </div>
-  );
-}
-
-function FlujoDetail({
-  flowId,
-  projectId,
-  onBack,
-}: {
-  flowId: string;
-  projectId: string;
-  onBack: () => void;
-}) {
-  const { data: flujo, isLoading } = useFlow(flowId);
-  const updateFlow = useUpdateFlow(projectId);
-  const [draft, setDraft] = React.useState<string>("");
-
-  React.useEffect(() => {
-    if (flujo?.json) setDraft(flujo.json);
-  }, [flujo?.json]);
-
-  function saveJson() {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(draft);
-    } catch {
-      toast.error("El JSON no es válido");
-      return;
-    }
-    updateFlow.mutate(
-      { id: flowId, flowJson: parsed },
-      {
-        onSuccess: () => toast.success("Flujo actualizado"),
-        onError: (err) =>
-          toast.error(`No se pudo guardar: ${(err as Error).message}`),
-      },
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="-ml-2 mb-1 h-8 text-muted-foreground"
-          onClick={onBack}
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Flujos
-        </Button>
-        <h2 className="text-xl font-semibold tracking-tight">
-          {flujo?.name ?? "Flujo"}
-        </h2>
-        {flujo ? (
-          <p className="text-sm text-muted-foreground">
-            v{flujo.version} · {flujo.agentCount} agentes ·{" "}
-            {formatBytes(flujo.sizeBytes)} · {formatDate(flujo.createdAt)}
-          </p>
-        ) : null}
-      </div>
-
-      {isLoading || !flujo ? (
-        <div className="flex h-[60vh] items-center justify-center rounded-md border text-sm text-muted-foreground">
-          Cargando flujo…
-        </div>
-      ) : (
-        <Tabs defaultValue="grafo" className="space-y-3">
-          <TabsList>
-            <TabsTrigger value="grafo">Grafo</TabsTrigger>
-            <TabsTrigger value="json">JSON</TabsTrigger>
-          </TabsList>
-          <TabsContent value="grafo">
-            <FlujoGraph flujo={flujo} />
-          </TabsContent>
-          <TabsContent value="json" className="space-y-3">
-            <textarea
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              spellCheck={false}
-              className="min-h-[78vh] w-full resize-y rounded-md border bg-muted p-4 font-mono text-xs leading-relaxed"
-            />
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDraft(flujo.json ?? "")}
-              >
-                Revertir
-              </Button>
-              <Button
-                size="sm"
-                onClick={saveJson}
-                disabled={updateFlow.isPending || draft === flujo.json}
-              >
-                {updateFlow.isPending ? "Guardando…" : "Guardar JSON"}
-              </Button>
-            </div>
-          </TabsContent>
-        </Tabs>
       )}
     </div>
   );

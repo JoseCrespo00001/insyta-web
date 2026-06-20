@@ -89,15 +89,16 @@ export function useFlow(flowId: string, enabled = true) {
   });
 }
 
-export function useDeleteFlow(projectId: string) {
+export function useDeleteFlow(_projectId?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (flowId: string) => api.del<void>(`/api/v1/flows/${flowId}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["flows", projectId] }),
+    // Invalida todas las listas de flujos (por proyecto + global).
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["flows"] }),
   });
 }
 
-export function useUpdateFlow(projectId: string) {
+export function useUpdateFlow(_projectId?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: { id: string; flowJson?: unknown; name?: string }) =>
@@ -106,7 +107,7 @@ export function useUpdateFlow(projectId: string) {
         flowJson: input.flowJson,
       }),
     onSuccess: (_d, vars) => {
-      qc.invalidateQueries({ queryKey: ["flows", projectId] });
+      qc.invalidateQueries({ queryKey: ["flows"] });
       qc.invalidateQueries({ queryKey: ["flow", vars.id] });
     },
   });
