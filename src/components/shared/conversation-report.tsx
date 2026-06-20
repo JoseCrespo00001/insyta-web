@@ -70,6 +70,9 @@ export function ConversationReport({
   conversation: Conversation;
 }) {
   const e = conversation.evaluation;
+  // "Evaluada" = el judge ya corrió (hay score o timestamp de evaluación).
+  // Sin eso, no mostramos ceros/"No" que parecen datos reales.
+  const evaluated = conversation.score != null || Boolean(e.evaluatedAt);
 
   return (
     <div className="space-y-4">
@@ -101,85 +104,104 @@ export function ConversationReport({
             {scoreLabel(conversation.score).text}
           </span>
         </div>
-        <div className="rounded-xl border p-4">
-          <p className="text-xs font-medium text-muted-foreground">Cómo fue</p>
-          <p className="mt-1 text-sm text-muted-foreground">{e.summary}</p>
-        </div>
+        {evaluated ? (
+          <div className="rounded-xl border p-4">
+            <p className="text-xs font-medium text-muted-foreground">
+              Cómo fue
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{e.summary}</p>
+          </div>
+        ) : (
+          <div className="flex flex-col justify-center rounded-xl border border-dashed p-4">
+            <p className="text-sm font-medium">Sin evaluar todavía</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Corré una auditoría sobre esta conversación para medir resolución,
+              satisfacción, costo y más.
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Dimensiones medidas */}
-      <section className="space-y-2">
-        <h4 className="text-sm font-semibold">Dimensiones medidas</h4>
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
-          <DimTile
-            label="Resolución"
-            value={yesNo(e.resolution)}
-            intent={e.resolution ? "good" : "bad"}
-          />
-          <DimTile
-            label="Satisfacción"
-            value={`${e.satisfaction} / 5`}
-            intent={ratingIntent(e.satisfaction)}
-          />
-          <DimTile
-            label="Eficiencia"
-            value={`${e.efficiency} / 5`}
-            intent={ratingIntent(e.efficiency)}
-          />
-          <DimTile
-            label="Tono"
-            value={TONE_ES[e.tone] ?? e.tone}
-            intent={
-              e.tone === "negative"
-                ? "bad"
-                : e.tone === "positive"
-                  ? "good"
-                  : "neutral"
-            }
-          />
-          <DimTile
-            label="Frustración"
-            value={yesNo(e.frustration)}
-            intent={e.frustration ? "bad" : "neutral"}
-          />
-          <DimTile
-            label="Escaló a humano"
-            value={yesNo(e.escalated)}
-            intent={e.escalated ? "warn" : "neutral"}
-          />
-          <DimTile
-            label="Fuera de scope"
-            value={yesNo(e.scopeViolation)}
-            intent={e.scopeViolation ? "bad" : "neutral"}
-          />
-          <DimTile label="Tema" value={e.topic} />
-        </div>
-      </section>
+      {!evaluated ? null : (
+        <>
+          {/* Dimensiones medidas */}
+          <section className="space-y-2">
+            <h4 className="text-sm font-semibold">Dimensiones medidas</h4>
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+              <DimTile
+                label="Resolución"
+                value={yesNo(e.resolution)}
+                intent={e.resolution ? "good" : "bad"}
+              />
+              <DimTile
+                label="Satisfacción"
+                value={`${e.satisfaction} / 5`}
+                intent={ratingIntent(e.satisfaction)}
+              />
+              <DimTile
+                label="Eficiencia"
+                value={`${e.efficiency} / 5`}
+                intent={ratingIntent(e.efficiency)}
+              />
+              <DimTile
+                label="Tono"
+                value={TONE_ES[e.tone] ?? e.tone}
+                intent={
+                  e.tone === "negative"
+                    ? "bad"
+                    : e.tone === "positive"
+                      ? "good"
+                      : "neutral"
+                }
+              />
+              <DimTile
+                label="Frustración"
+                value={yesNo(e.frustration)}
+                intent={e.frustration ? "bad" : "neutral"}
+              />
+              <DimTile
+                label="Escaló a humano"
+                value={yesNo(e.escalated)}
+                intent={e.escalated ? "warn" : "neutral"}
+              />
+              <DimTile
+                label="Fuera de scope"
+                value={yesNo(e.scopeViolation)}
+                intent={e.scopeViolation ? "bad" : "neutral"}
+              />
+              <DimTile label="Tema" value={e.topic} />
+            </div>
+          </section>
 
-      {/* Traza técnica */}
-      <section className="space-y-2">
-        <h4 className="text-sm font-semibold">Traza</h4>
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-          <DimTile label="Modelo" value={e.modelUsed} />
-          <DimTile label="Tokens" value={`${e.tokensInput + e.tokensOutput}`} />
-          <DimTile label="Costo" value={formatCurrency(e.costUsd)} />
-          <DimTile label="Latencia" value={`${e.latencyMs} ms`} />
-        </div>
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-          <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
-            <span className="text-xs text-muted-foreground">trace_id</span>
-            <code className="truncate rounded bg-muted px-1.5 py-0.5 text-xs">
-              {e.phoenixTraceId}
-            </code>
-          </div>
-          <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
-            <span className="text-xs text-muted-foreground">span_id</span>
-            <code className="truncate rounded bg-muted px-1.5 py-0.5 text-xs">
-              {e.phoenixSpanId}
-            </code>
-          </div>
-        </div>
-      </section>
+          {/* Traza técnica */}
+          <section className="space-y-2">
+            <h4 className="text-sm font-semibold">Traza</h4>
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              <DimTile label="Modelo" value={e.modelUsed} />
+              <DimTile
+                label="Tokens"
+                value={`${e.tokensInput + e.tokensOutput}`}
+              />
+              <DimTile label="Costo" value={formatCurrency(e.costUsd)} />
+              <DimTile label="Latencia" value={`${e.latencyMs} ms`} />
+            </div>
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+              <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+                <span className="text-xs text-muted-foreground">trace_id</span>
+                <code className="truncate rounded bg-muted px-1.5 py-0.5 text-xs">
+                  {e.phoenixTraceId}
+                </code>
+              </div>
+              <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+                <span className="text-xs text-muted-foreground">span_id</span>
+                <code className="truncate rounded bg-muted px-1.5 py-0.5 text-xs">
+                  {e.phoenixSpanId}
+                </code>
+              </div>
+            </div>
+          </section>
+        </>
+      )}
     </div>
   );
 }
