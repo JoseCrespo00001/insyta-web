@@ -1,5 +1,8 @@
+"use client";
+
 import * as React from "react";
-import { ArrowLeft, Eye, Upload, Workflow } from "lucide-react";
+import { ArrowLeft, Eye, Trash2, Upload, Workflow } from "lucide-react";
+import { toast } from "sonner";
 
 import { FlujoGraph } from "./flujo-graph";
 import { Button } from "@/components/ui/button";
@@ -12,73 +15,75 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ApiError } from "@/lib/api";
 import { formatBytes, formatDate } from "@/lib/format";
-import { makeFlujoId } from "@/lib/projects/mock";
+import {
+  useCreateFlow,
+  useDeleteFlow,
+  useFlow,
+  useUpdateFlow,
+} from "@/lib/queries";
 import type { Flujo } from "@/lib/projects/types";
 
 export function FlujosTab({
   flujos,
-  onAddFlujo,
+  projectId,
 }: {
   flujos: Flujo[];
-  onAddFlujo: (flujo: Flujo) => void;
+  projectId: string;
 }) {
   const fileRef = React.useRef<HTMLInputElement>(null);
-  const [viewing, setViewing] = React.useState<Flujo | null>(null);
+  const [viewingId, setViewingId] = React.useState<string | null>(null);
+  const createFlow = useCreateFlow(projectId);
+  const deleteFlow = useDeleteFlow(projectId);
 
-  function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-    // Mock: el backend parsea el JSON real. Acá solo registramos metadata.
-    onAddFlujo({
-      id: makeFlujoId(),
-      name: file.name.replace(/\.json$/i, ""),
-      version: "1.0.0",
-      sizeBytes: file.size,
-      agentCount: 0,
-      createdAt: new Date().toISOString(),
-      json: "// El backend procesará este flujo.\n// (mock: el contenido no se parsea en el front)",
-    });
     event.target.value = "";
+    let flowJson: unknown;
+    try {
+      flowJson = JSON.parse(await file.text());
+    } catch {
+      toast.error("El archivo no es un JSON válido");
+      return;
+    }
+    const parsed = flowJson as { name?: string; last_tested_version?: string };
+    createFlow.mutate(
+      {
+        name: parsed.name || file.name.replace(/\.json$/i, ""),
+        version: parsed.last_tested_version || "1.0",
+        flowJson,
+      },
+      {
+        onSuccess: (f) =>
+          toast.success(`Flujo "${f.name}" subido (${f.agentCount} agentes)`),
+        onError: (err) =>
+          toast.error(
+            err instanceof ApiError && err.status === 401
+              ? "Iniciá sesión para subir flujos"
+              : `No se pudo subir el flujo: ${(err as Error).message}`,
+          ),
+      },
+    );
   }
 
-  // Vista dedicada: flujo (grafo / JSON), full-width.
-  if (viewing) {
+  function handleDelete(flujo: Flujo) {
+    if (!window.confirm(`¿Eliminar el flujo "${flujo.name}"?`)) return;
+    deleteFlow.mutate(flujo.id, {
+      onSuccess: () => toast.success("Flujo eliminado"),
+      onError: (err) =>
+        toast.error(`No se pudo eliminar: ${(err as Error).message}`),
+    });
+  }
+
+  if (viewingId) {
     return (
-      <div className="space-y-4">
-        <div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="-ml-2 mb-1 h-8 text-muted-foreground"
-            onClick={() => setViewing(null)}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Flujos
-          </Button>
-          <h2 className="text-xl font-semibold tracking-tight">
-            {viewing.name}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            v{viewing.version} · {viewing.agentCount} agentes ·{" "}
-            {formatBytes(viewing.sizeBytes)} · {formatDate(viewing.createdAt)}
-          </p>
-        </div>
-        <Tabs defaultValue="grafo" className="space-y-3">
-          <TabsList>
-            <TabsTrigger value="grafo">Grafo</TabsTrigger>
-            <TabsTrigger value="json">JSON</TabsTrigger>
-          </TabsList>
-          <TabsContent value="grafo">
-            <FlujoGraph flujo={viewing} />
-          </TabsContent>
-          <TabsContent value="json">
-            <pre className="max-h-[72vh] overflow-auto rounded-md bg-muted p-4 text-xs leading-relaxed">
-              {viewing.json}
-            </pre>
-          </TabsContent>
-        </Tabs>
-      </div>
+      <FlujoDetail
+        flowId={viewingId}
+        projectId={projectId}
+        onBack={() => setViewingId(null)}
+      />
     );
   }
 
@@ -130,19 +135,129 @@ export function FlujosTab({
                 </CardDescription>
               </CardHeader>
               <CardContent />
-              <CardFooter>
+              <CardFooter className="gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setViewing(flujo)}
+                  onClick={() => setViewingId(flujo.id)}
                 >
                   <Eye className="h-4 w-4" />
                   Ver flujo
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-destructive"
+                  onClick={() => handleDelete(flujo)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Eliminar
                 </Button>
               </CardFooter>
             </Card>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+function FlujoDetail({
+  flowId,
+  projectId,
+  onBack,
+}: {
+  flowId: string;
+  projectId: string;
+  onBack: () => void;
+}) {
+  const { data: flujo, isLoading } = useFlow(flowId);
+  const updateFlow = useUpdateFlow(projectId);
+  const [draft, setDraft] = React.useState<string>("");
+
+  React.useEffect(() => {
+    if (flujo?.json) setDraft(flujo.json);
+  }, [flujo?.json]);
+
+  function saveJson() {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(draft);
+    } catch {
+      toast.error("El JSON no es válido");
+      return;
+    }
+    updateFlow.mutate(
+      { id: flowId, flowJson: parsed },
+      {
+        onSuccess: () => toast.success("Flujo actualizado"),
+        onError: (err) =>
+          toast.error(`No se pudo guardar: ${(err as Error).message}`),
+      },
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-2 mb-1 h-8 text-muted-foreground"
+          onClick={onBack}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Flujos
+        </Button>
+        <h2 className="text-xl font-semibold tracking-tight">
+          {flujo?.name ?? "Flujo"}
+        </h2>
+        {flujo ? (
+          <p className="text-sm text-muted-foreground">
+            v{flujo.version} · {flujo.agentCount} agentes ·{" "}
+            {formatBytes(flujo.sizeBytes)} · {formatDate(flujo.createdAt)}
+          </p>
+        ) : null}
+      </div>
+
+      {isLoading || !flujo ? (
+        <div className="flex h-[60vh] items-center justify-center rounded-md border text-sm text-muted-foreground">
+          Cargando flujo…
+        </div>
+      ) : (
+        <Tabs defaultValue="grafo" className="space-y-3">
+          <TabsList>
+            <TabsTrigger value="grafo">Grafo</TabsTrigger>
+            <TabsTrigger value="json">JSON</TabsTrigger>
+          </TabsList>
+          <TabsContent value="grafo">
+            <FlujoGraph flujo={flujo} />
+          </TabsContent>
+          <TabsContent value="json" className="space-y-3">
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              spellCheck={false}
+              className="min-h-[78vh] w-full resize-y rounded-md border bg-muted p-4 font-mono text-xs leading-relaxed"
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDraft(flujo.json ?? "")}
+              >
+                Revertir
+              </Button>
+              <Button
+                size="sm"
+                onClick={saveJson}
+                disabled={updateFlow.isPending || draft === flujo.json}
+              >
+                {updateFlow.isPending ? "Guardando…" : "Guardar JSON"}
+              </Button>
+            </div>
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );

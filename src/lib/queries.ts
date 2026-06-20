@@ -69,6 +69,37 @@ export function useCreateFlow(projectId: string) {
   });
 }
 
+export function useFlow(flowId: string, enabled = true) {
+  return useQuery({
+    queryKey: ["flow", flowId],
+    queryFn: () => api.get<Flujo>(`/api/v1/flows/${flowId}`),
+    enabled: enabled && !!flowId,
+  });
+}
+
+export function useDeleteFlow(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (flowId: string) => api.del<void>(`/api/v1/flows/${flowId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["flows", projectId] }),
+  });
+}
+
+export function useUpdateFlow(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: string; flowJson?: unknown; name?: string }) =>
+      api.put<Flujo>(`/api/v1/flows/${input.id}`, {
+        name: input.name,
+        flowJson: input.flowJson,
+      }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["flows", projectId] });
+      qc.invalidateQueries({ queryKey: ["flow", vars.id] });
+    },
+  });
+}
+
 // ── Uploads ───────────────────────────────────────────────────────────────
 export type UploadGroupItem = {
   id: string;

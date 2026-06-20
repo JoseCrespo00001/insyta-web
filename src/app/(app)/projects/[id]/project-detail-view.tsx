@@ -12,13 +12,8 @@ import { ResumenTab } from "./sections/resumen-tab";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate } from "@/lib/format";
-import {
-  SAMPLE_AUDITS,
-  SAMPLE_CONVERSATIONS,
-  SAMPLE_FLUJOS,
-  buildReport,
-  makeAuditId,
-} from "@/lib/projects/mock";
+import { buildReport, makeAuditId } from "@/lib/projects/mock";
+import { useAudits, useFlows, useProjects } from "@/lib/queries";
 import type { Audit, Conversation, Flujo } from "@/lib/projects/types";
 
 export function ProjectDetailView({
@@ -28,17 +23,28 @@ export function ProjectDetailView({
   projectId: string;
   initialTab?: string;
 }) {
-  // Estado compartido del proyecto (mock; el backend persiste de verdad).
-  const [flujos, setFlujos] = React.useState<Flujo[]>(SAMPLE_FLUJOS);
-  const [conversations, setConversations] = React.useState<Conversation[]>(() =>
-    SAMPLE_CONVERSATIONS.map((c) => ({ ...c })),
-  );
-  const [audits, setAudits] = React.useState<Audit[]>(SAMPLE_AUDITS);
+  // Datos reales del proyecto desde el backend.
+  const { data: projects } = useProjects();
+  const project = projects?.find((p) => p.publicId === projectId);
+  const { data: flowsData } = useFlows(projectId);
+  const { data: auditsData } = useAudits(projectId);
+
+  // Estado local (las tabs mutan/seleccionan); se siembra desde el backend.
+  const [flujos, setFlujos] = React.useState<Flujo[]>([]);
+  const [conversations, setConversations] = React.useState<Conversation[]>([]);
+  const [audits, setAudits] = React.useState<Audit[]>([]);
+
+  React.useEffect(() => {
+    if (flowsData) setFlujos(flowsData as Flujo[]);
+  }, [flowsData]);
+  React.useEffect(() => {
+    if (auditsData) setAudits(auditsData as unknown as Audit[]);
+  }, [auditsData]);
 
   function uploadCsv() {
-    // Mock: el backend parsea el CSV real. Acá poblamos con datos de ejemplo.
-    setConversations(SAMPLE_CONVERSATIONS.map((c) => ({ ...c })));
-    toast.success("Conversaciones cargadas desde el CSV");
+    // TODO(api): wire al file picker + POST /uploads/csv (requiere worker Celery
+    // para procesar). Por ahora informa al usuario.
+    toast.info("La carga de CSV se procesa en el backend (worker en curso).");
   }
 
   function toggleConversation(id: string) {
@@ -132,7 +138,7 @@ export function ProjectDetailView({
           </Link>
         </Button>
         <h1 className="text-2xl font-semibold tracking-tight">
-          Bot Ventas 001
+          {project?.name ?? "Proyecto"}
         </h1>
         <p className="text-sm text-muted-foreground">{projectId}</p>
       </div>
@@ -156,10 +162,7 @@ export function ProjectDetailView({
         </TabsContent>
 
         <TabsContent value="flujos">
-          <FlujosTab
-            flujos={flujos}
-            onAddFlujo={(f) => setFlujos((prev) => [f, ...prev])}
-          />
+          <FlujosTab flujos={flujos} projectId={projectId} />
         </TabsContent>
 
         <TabsContent value="conversaciones">
