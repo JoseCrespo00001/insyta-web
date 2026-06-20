@@ -130,11 +130,44 @@
     transform: scale(1.65);
   }
 }
+/* Sonar — anillos que se expanden y se desvanecen (radial orbital). */
+@keyframes orbit-sonar {
+  0% {
+    transform: translate(-50%, -50%) scale(0.6);
+    opacity: 0.5;
+  }
+  70% {
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.75);
+    opacity: 0;
+  }
+}
 @layer components {
   .aurora {
     animation: aurora-float 16s ease-in-out infinite;
   }
   .halo-pulse {
     animation: halo-pulse 6s ease-in-out infinite;
+  }
+  .orbit-sonar {
+    animation: orbit-sonar 4.5s ease-out infinite backwards;
+  }
+  .pulse-soft {
+    animation: pulse-soft 3s ease-in-out infinite;
+  }
+}
+
+/* Pulso suave para el glow del botón activo (sutil, sin parpadeo). */
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.08);
   }
 }

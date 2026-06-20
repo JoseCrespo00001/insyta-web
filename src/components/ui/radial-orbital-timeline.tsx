@@ -106,6 +106,14 @@ export default function RadialOrbitalTimeline({
           className="absolute inset-0 flex items-center justify-center"
           style={{ perspective: "1000px" }}
         >
+          {/* Glow ambiental difuso que sobresale del molecule (pulso lento).
+              Más fuerte para que se note también sobre fondo claro. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse rounded-full bg-primary/50 blur-[80px] dark:bg-primary/30"
+            style={{ width: radius * 2.4, height: radius * 2.4 }}
+          />
+
           {/* Isotipo de Insyta = esqueleto del ciclo. Gira en sync con los nodos. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -140,16 +148,23 @@ export default function RadialOrbitalTimeline({
                   toggle(item.id);
                 }}
               >
-                {/* Chip botón: fondo + sombra + ring para que se note clickeable */}
+                {/* Gradiente radial por fuera del círculo (más fuerte en claro). */}
+                <div
+                  aria-hidden
+                  className={cn(
+                    "pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,hsl(137_72%_66%/0.65)_0%,transparent_70%)] transition-all duration-300 dark:bg-[radial-gradient(circle,hsl(137_72%_66%/0.45)_0%,transparent_70%)]",
+                    isActive ? "pulse-soft size-40" : "size-28",
+                  )}
+                />
+
+                {/* Chip botón transparente: el icono cae sobre la punta verde del svg. */}
                 <div
                   className={cn(
-                    "relative flex size-12 items-center justify-center rounded-full ring-1 transition-all duration-300",
-                    isActive
-                      ? "scale-125 bg-primary text-primary-foreground shadow-xl shadow-primary/50 ring-primary"
-                      : "bg-background/90 text-foreground shadow-md ring-border/70 backdrop-blur-sm hover:scale-110 hover:bg-background hover:shadow-lg hover:shadow-primary/30 hover:ring-2 hover:ring-primary",
+                    "relative flex size-16 items-center justify-center rounded-full text-primary-foreground transition-all duration-300",
+                    isActive ? "scale-125" : "hover:scale-110",
                   )}
                 >
-                  <Icon size={18} />
+                  <Icon size={30} />
                 </div>
 
                 {isActive && (
