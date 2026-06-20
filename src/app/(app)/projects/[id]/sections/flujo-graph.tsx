@@ -4,12 +4,10 @@ import * as React from "react";
 import {
   Background,
   Controls,
-  Handle,
   Position,
   ReactFlow,
   type Edge,
   type Node,
-  type NodeProps,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -24,7 +22,6 @@ const TYPE_ACCENT: Record<string, string> = {
   IfElse: "hsl(41 96% 60%)",
 };
 
-// Campos del template de Langflow que vale la pena mostrar en el nodo.
 const SHOWN_FIELDS = [
   "template",
   "system_prompt",
@@ -51,77 +48,87 @@ type RawNode = {
 };
 type RawEdge = { id?: string; source?: string; target?: string };
 
-type LFNodeData = {
-  title: string;
-  type: string;
-  accent?: string;
-  description?: string;
-  fields: { label: string; value: string }[];
-};
-
-function extractFields(
-  template?: Record<string, LFField>,
-): LFNodeData["fields"] {
-  if (!template) return [];
-  const out: LFNodeData["fields"] = [];
+function fields(template?: Record<string, LFField>) {
+  if (!template) return [] as { label: string; value: string }[];
+  const out: { label: string; value: string }[] = [];
   for (const key of SHOWN_FIELDS) {
-    const f = template[key];
-    const v = f?.value;
+    const v = template[key]?.value;
     if (typeof v === "string" && v.trim()) {
       out.push({
-        label: f?.display_name || key,
-        value: v.length > 220 ? `${v.slice(0, 220)}…` : v,
+        label: template[key]?.display_name || key,
+        value: v.length > 200 ? `${v.slice(0, 200)}…` : v,
       });
     }
   }
   return out;
 }
 
-function LangflowNode({ data }: NodeProps) {
-  const d = data as unknown as LFNodeData;
+function nodeLabel(
+  title: string,
+  type: string,
+  accent: string | undefined,
+  fs: { label: string; value: string }[],
+) {
   return (
-    <div
-      className="rounded-xl border bg-[hsl(217_33%_12%)] text-white shadow-md"
-      style={{ width: 300, borderColor: d.accent ?? "hsl(215 40% 22%)" }}
-    >
-      <Handle type="target" position={Position.Left} />
-      <div className="flex items-center gap-2 border-b border-white/10 px-3 py-2">
+    <div style={{ textAlign: "left", width: 270 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          marginBottom: fs.length ? 6 : 0,
+        }}
+      >
         <span
-          className="h-2.5 w-2.5 rounded-full"
-          style={{ background: d.accent ?? "hsl(215 40% 40%)" }}
+          style={{
+            width: 9,
+            height: 9,
+            borderRadius: 9,
+            background: accent ?? "#5b6b85",
+            display: "inline-block",
+          }}
         />
-        <span className="text-sm font-semibold">{d.title}</span>
-        <span className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/70">
-          {d.type}
+        <strong style={{ fontSize: 13 }}>{title}</strong>
+        <span
+          style={{
+            marginLeft: "auto",
+            fontSize: 9,
+            textTransform: "uppercase",
+            letterSpacing: 0.5,
+            opacity: 0.6,
+          }}
+        >
+          {type}
         </span>
       </div>
-      <div className="space-y-2 px-3 py-2">
-        {d.description ? (
-          <p className="text-[11px] leading-snug text-white/50">
-            {d.description}
-          </p>
-        ) : null}
-        {d.fields.length === 0 ? (
-          <p className="text-[11px] text-white/40">Sin parámetros visibles.</p>
-        ) : (
-          d.fields.map((f) => (
-            <div key={f.label} className="space-y-0.5">
-              <p className="text-[10px] font-medium uppercase tracking-wide text-white/45">
-                {f.label}
-              </p>
-              <p className="whitespace-pre-wrap break-words text-[11px] leading-snug text-white/80">
-                {f.value}
-              </p>
-            </div>
-          ))
-        )}
-      </div>
-      <Handle type="source" position={Position.Right} />
+      {fs.map((f) => (
+        <div key={f.label} style={{ marginTop: 6 }}>
+          <div
+            style={{
+              fontSize: 9,
+              textTransform: "uppercase",
+              letterSpacing: 0.4,
+              opacity: 0.5,
+            }}
+          >
+            {f.label}
+          </div>
+          <div
+            style={{
+              fontSize: 11,
+              lineHeight: 1.35,
+              opacity: 0.85,
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}
+          >
+            {f.value}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
-
-const nodeTypes = { lf: LangflowNode };
 
 function buildGraph(jsonStr: string): { nodes: Node[]; edges: Edge[] } | null {
   let parsed: unknown;
@@ -138,26 +145,35 @@ function buildGraph(jsonStr: string): { nodes: Node[]; edges: Edge[] } | null {
 
   const nodes: Node[] = rawNodes.map((n, i) => {
     const type = n.data?.type ?? "Node";
-    const nodeData: LFNodeData = {
-      title: n.data?.node?.display_name ?? type,
-      type,
-      accent: TYPE_ACCENT[type],
-      description: n.data?.node?.description,
-      fields: extractFields(n.data?.node?.template),
-    };
+    const accent = TYPE_ACCENT[type];
     return {
       id: n.id ?? `n${i}`,
-      type: "lf",
       position: { x: n.position?.x ?? i * 360, y: n.position?.y ?? 0 },
-      data: nodeData as unknown as Record<string, unknown>,
+      data: {
+        label: nodeLabel(
+          n.data?.node?.display_name ?? type,
+          type,
+          accent,
+          fields(n.data?.node?.template),
+        ),
+      },
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
+      style: {
+        background: "hsl(217 33% 12%)",
+        color: "white",
+        border: `1px solid ${accent ?? "hsl(215 40% 22%)"}`,
+        borderRadius: 12,
+        padding: 12,
+        width: 300,
+      },
     };
   });
 
-  const nodeIds = new Set(nodes.map((n) => n.id));
+  const ids = new Set(nodes.map((n) => n.id));
   const edges: Edge[] = (data?.edges ?? [])
     .filter(
-      (e) =>
-        e.source && e.target && nodeIds.has(e.source) && nodeIds.has(e.target),
+      (e) => e.source && e.target && ids.has(e.source) && ids.has(e.target),
     )
     .map((e, i) => ({
       id: e.id ?? `e${i}`,
@@ -175,20 +191,25 @@ export function FlujoGraph({ flujo }: { flujo: Flujo }) {
 
   if (!graph) {
     return (
-      <div className="flex h-[78vh] w-full items-center justify-center rounded-md border bg-[hsl(215_100%_5%)] text-sm text-muted-foreground">
+      <div
+        style={{ height: "78vh" }}
+        className="flex w-full items-center justify-center rounded-md border bg-[hsl(215_100%_5%)] text-sm text-muted-foreground"
+      >
         No se pudo leer el grafo del flujo (JSON sin nodos).
       </div>
     );
   }
 
   return (
-    <div className="h-[78vh] w-full overflow-hidden rounded-md border bg-[hsl(215_100%_5%)]">
+    <div
+      style={{ height: "78vh" }}
+      className="w-full overflow-hidden rounded-md border bg-[hsl(215_100%_5%)]"
+    >
       <ReactFlow
         nodes={graph.nodes}
         edges={graph.edges}
-        nodeTypes={nodeTypes}
         fitView
-        minZoom={0.1}
+        minZoom={0.05}
         proOptions={{ hideAttribution: true }}
         nodesDraggable={false}
         nodesConnectable={false}

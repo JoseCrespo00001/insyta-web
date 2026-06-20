@@ -1,14 +1,17 @@
 import * as React from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Check,
   ChevronDown,
   FileText,
+  Loader2,
   Minus,
   MessagesSquare,
   Pin,
   Search,
   Upload,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { ConversationWorkspace } from "@/components/shared/conversation-workspace";
 import { ScoreBadge } from "@/components/shared/score-badge";
@@ -16,8 +19,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
-import { CSV_GROUPS } from "@/lib/projects/mock";
+import { useUploadCsv, useUploadStatus } from "@/lib/queries";
 import type { Conversation, Satisfaction } from "@/lib/projects/types";
 import { cn } from "@/lib/utils";
 
@@ -80,7 +84,7 @@ function GroupCheck({
 
 export function ConversacionesTab({
   conversations,
-  onUploadCsv,
+  projectId,
   onToggle,
   onToggleAll,
   onToggleGroup,
@@ -88,7 +92,7 @@ export function ConversacionesTab({
   onDeleteConversation,
 }: {
   conversations: Conversation[];
-  onUploadCsv: () => void;
+  projectId: string;
   onToggle: (id: string) => void;
   onToggleAll: (selectAll: boolean) => void;
   onToggleGroup: (groupId: string, selectAll: boolean) => void;
@@ -99,14 +103,49 @@ export function ConversacionesTab({
   const [viewingId, setViewingId] = React.useState<string | null>(null);
   const [collapsed, setCollapsed] = React.useState<Record<string, boolean>>({});
   const fileRef = React.useRef<HTMLInputElement>(null);
+  const qc = useQueryClient();
+
+  // Carga de CSV + seguimiento de progreso.
+  const uploadCsv = useUploadCsv(projectId);
+  const [uploadId, setUploadId] = React.useState<string | null>(null);
+  const [uploadName, setUploadName] = React.useState("");
+  const { data: status } = useUploadStatus(uploadId);
+
+  React.useEffect(() => {
+    if (!status) return;
+    if (status.status === "completed") {
+      toast.success(
+        `CSV procesado: ${status.rows_processed ?? 0} conversaciones`,
+      );
+      qc.invalidateQueries({ queryKey: ["conversations", projectId] });
+      qc.invalidateQueries({ queryKey: ["uploads", projectId] });
+      setUploadId(null);
+    } else if (status.status === "failed") {
+      toast.error(`La carga falló: ${status.error_message ?? "error"}`);
+      setUploadId(null);
+    }
+  }, [status, qc, projectId]);
 
   // Buscamos la conversación viva por id (refleja pin/delete en tiempo real).
   const viewing = conversations.find((c) => c.id === viewingId) ?? null;
 
   function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
-    if (!event.target.files?.[0]) return;
-    onUploadCsv(); // mock: el backend parsea el CSV de verdad
+    const file = event.target.files?.[0];
     event.target.value = "";
+    if (!file) return;
+    setUploadName(file.name);
+    uploadCsv.mutate(file, {
+      onSuccess: (res) => {
+        setUploadId(res.upload_id);
+        toast.info("Procesando CSV en el backend…");
+      },
+      onError: (err) =>
+        toast.error(
+          err instanceof ApiError && err.status === 401
+            ? "Iniciá sesión para subir conversaciones"
+            : `No se pudo subir el CSV: ${(err as Error).message}`,
+        ),
+    });
   }
 
   const hidden = (
@@ -118,6 +157,29 @@ export function ConversacionesTab({
       onChange={handleFile}
     />
   );
+
+  const uploading = uploadCsv.isPending || !!uploadId;
+  const progressCard = uploading ? (
+    <Card className="border-primary/30 bg-primary/5">
+      <CardContent className="space-y-2 p-4">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          Procesando {uploadName || "CSV"}…
+        </div>
+        <div className="h-2 overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: `${status?.progress_pct ?? 5}%` }}
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {status
+            ? `${status.rows_processed ?? 0}/${status.rows_total ?? "?"} conversaciones · ${status.progress_pct}%`
+            : "Subiendo archivo…"}
+        </p>
+      </CardContent>
+    </Card>
+  ) : null;
 
   if (viewing) {
     return (
@@ -132,25 +194,28 @@ export function ConversacionesTab({
 
   if (conversations.length === 0) {
     return (
-      <Card>
-        <CardContent className="flex flex-col items-center gap-4 py-16 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15">
-            <MessagesSquare className="h-6 w-6 text-primary" />
-          </div>
-          <div className="space-y-1">
-            <p className="font-medium">Todavía no hay conversaciones</p>
-            <p className="text-sm text-muted-foreground">
-              Subí un CSV: lo leemos y mostramos cada conversación como una card
-              para que elijas cuáles testear.
-            </p>
-          </div>
-          <Button onClick={() => fileRef.current?.click()}>
-            <Upload className="h-4 w-4" />
-            Subir CSV
-          </Button>
-          {hidden}
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        {progressCard}
+        <Card>
+          <CardContent className="flex flex-col items-center gap-4 py-16 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15">
+              <MessagesSquare className="h-6 w-6 text-primary" />
+            </div>
+            <div className="space-y-1">
+              <p className="font-medium">Todavía no hay conversaciones</p>
+              <p className="text-sm text-muted-foreground">
+                Subí un CSV: lo leemos y mostramos cada conversación como una
+                card para que elijas cuáles testear.
+              </p>
+            </div>
+            <Button onClick={() => fileRef.current?.click()}>
+              <Upload className="h-4 w-4" />
+              Subir CSV
+            </Button>
+            {hidden}
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -161,24 +226,34 @@ export function ConversacionesTab({
     c.contactName.toLowerCase().includes(q) ||
     c.preview.toLowerCase().includes(q);
 
-  // Agrupar por CSV de origen, respetando el orden de CSV_GROUPS.
-  // Dentro de cada grupo, las fijadas van primero.
+  // Agrupar por CSV de origen (uploadGroupId real). Las fijadas primero.
   const byPinned = (a: Conversation, b: Conversation) =>
     Number(b.pinned) - Number(a.pinned);
-  const groups = CSV_GROUPS.map((meta) => {
-    const all = conversations.filter((c) => c.uploadGroupId === meta.id);
-    return {
-      meta,
-      all,
-      visible: all.filter(matches).sort(byPinned),
-    };
-  }).filter((g) => g.all.length > 0 && g.visible.length > 0);
+  const ACCENTS = ["199 89% 60%", "137 72% 66%", "259 80% 70%", "41 96% 60%"];
+  const groupIds = [...new Set(conversations.map((c) => c.uploadGroupId))];
+  const groups = groupIds
+    .map((gid, i) => {
+      const all = conversations.filter((c) => c.uploadGroupId === gid);
+      const meta = {
+        id: gid,
+        filename: gid === "sin-grupo" ? "Conversaciones" : `CSV ${i + 1}`,
+        accent: ACCENTS[i % ACCENTS.length],
+        loadedAt: new Date().toISOString(),
+      };
+      return {
+        meta,
+        all,
+        visible: all.filter(matches).sort(byPinned),
+      };
+    })
+    .filter((g) => g.all.length > 0 && g.visible.length > 0);
 
   const selectedCount = conversations.filter((c) => c.selected).length;
   const allSelected = selectedCount === conversations.length;
 
   return (
     <div className="space-y-4">
+      {progressCard}
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative min-w-[220px] flex-1">

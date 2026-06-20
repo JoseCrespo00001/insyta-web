@@ -13,8 +13,50 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate } from "@/lib/format";
 import { buildReport, makeAuditId } from "@/lib/projects/mock";
-import { useAudits, useFlows, useProjects } from "@/lib/queries";
-import type { Audit, Conversation, Flujo } from "@/lib/projects/types";
+import {
+  useAudits,
+  useConversations,
+  useFlows,
+  useProjects,
+} from "@/lib/queries";
+import type {
+  Audit,
+  Conversation,
+  ConversationEvaluation,
+  Flujo,
+} from "@/lib/projects/types";
+
+const EMPTY_EVAL: ConversationEvaluation = {
+  resolution: false,
+  satisfaction: 0,
+  tone: "neutral",
+  frustration: false,
+  escalated: false,
+  efficiency: 0,
+  scopeViolation: false,
+  topic: "",
+  summary: "",
+  modelUsed: "",
+  tokensInput: 0,
+  tokensOutput: 0,
+  costUsd: 0,
+  latencyMs: 0,
+  phoenixTraceId: "",
+  phoenixSpanId: "",
+  evaluatedAt: "",
+};
+
+type ConvSummary = {
+  public_id: string;
+  external_id: string;
+  contact_name: string | null;
+  preview: string | null;
+  message_count: number;
+  upload_group_id: string | null;
+  score: number | null;
+  satisfaction: Conversation["satisfaction"];
+  resolved: boolean | null;
+};
 
 export function ProjectDetailView({
   projectId,
@@ -28,6 +70,7 @@ export function ProjectDetailView({
   const project = projects?.find((p) => p.publicId === projectId);
   const { data: flowsData } = useFlows(projectId);
   const { data: auditsData } = useAudits(projectId);
+  const { data: convData } = useConversations(projectId);
 
   // Estado local (las tabs mutan/seleccionan); se siembra desde el backend.
   const [flujos, setFlujos] = React.useState<Flujo[]>([]);
@@ -40,12 +83,30 @@ export function ProjectDetailView({
   React.useEffect(() => {
     if (auditsData) setAudits(auditsData as unknown as Audit[]);
   }, [auditsData]);
-
-  function uploadCsv() {
-    // TODO(api): wire al file picker + POST /uploads/csv (requiere worker Celery
-    // para procesar). Por ahora informa al usuario.
-    toast.info("La carga de CSV se procesa en el backend (worker en curso).");
-  }
+  React.useEffect(() => {
+    const items = (convData?.items as ConvSummary[] | undefined) ?? [];
+    setConversations((prev) => {
+      const sel = new Set(prev.filter((c) => c.selected).map((c) => c.id));
+      const pin = new Set(prev.filter((c) => c.pinned).map((c) => c.id));
+      return items.map((c) => ({
+        id: c.public_id,
+        uploadGroupId: c.upload_group_id ?? "sin-grupo",
+        externalId: c.external_id,
+        contactName: c.contact_name ?? "—",
+        preview: c.preview ?? "",
+        messageCount: c.message_count ?? 0,
+        userMessages: 0,
+        botMessages: 0,
+        messages: [],
+        score: c.score ?? null,
+        satisfaction: c.satisfaction ?? null,
+        resolved: c.resolved ?? null,
+        evaluation: EMPTY_EVAL,
+        selected: sel.has(c.public_id),
+        pinned: pin.has(c.public_id),
+      }));
+    });
+  }, [convData]);
 
   function toggleConversation(id: string) {
     setConversations((prev) =>
@@ -168,7 +229,7 @@ export function ProjectDetailView({
         <TabsContent value="conversaciones">
           <ConversacionesTab
             conversations={conversations}
-            onUploadCsv={uploadCsv}
+            projectId={projectId}
             onToggle={toggleConversation}
             onToggleAll={toggleAllConversations}
             onToggleGroup={toggleGroup}

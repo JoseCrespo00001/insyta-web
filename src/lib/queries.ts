@@ -126,12 +126,34 @@ export function useUploadCsv(projectId: string) {
       const form = new FormData();
       form.append("project_public_id", projectId);
       form.append("file", file);
-      return api.postForm<{ uploadId: string; status: string }>(
+      // POST /uploads/csv responds snake_case (UploadCreatedResponse).
+      return api.postForm<{ upload_id: string; status: string }>(
         "/api/v1/uploads/csv",
         form,
       );
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["uploads", projectId] }),
+  });
+}
+
+// GET /uploads/{id} is snake_case (UploadStatusResponse).
+export type UploadStatus = {
+  status: string;
+  rows_total: number | null;
+  rows_processed: number | null;
+  progress_pct: number;
+  error_message: string | null;
+};
+
+export function useUploadStatus(uploadId: string | null) {
+  return useQuery({
+    queryKey: ["upload", uploadId],
+    queryFn: () => api.get<UploadStatus>(`/api/v1/uploads/${uploadId}`),
+    enabled: !!uploadId,
+    refetchInterval: (q) => {
+      const s = (q.state.data as UploadStatus | undefined)?.status;
+      return s === "completed" || s === "failed" ? false : 1200;
+    },
   });
 }
 
