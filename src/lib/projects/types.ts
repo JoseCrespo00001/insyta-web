@@ -147,6 +147,7 @@ export type Audit = {
   emphasis: string[]; // keys de EmphasisOption
   freeText: string;
   createdAt: string; // ISO
-  status: "active" | "archived";
+  // running = el judge corriendo · failed = el judge falló (p.ej. falta API key)
+  status: "running" | "active" | "archived" | "failed";
   report: Report;
 };

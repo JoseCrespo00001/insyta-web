@@ -11,11 +11,10 @@ import { FlujosTab } from "./sections/flujos-tab";
 import { ResumenTab } from "./sections/resumen-tab";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatDate } from "@/lib/format";
-import { buildReport, makeAuditId } from "@/lib/projects/mock";
 import {
   useAudits,
   useConversations,
+  useCreateAudit,
   useFlows,
   useProjects,
 } from "@/lib/queries";
@@ -71,6 +70,7 @@ export function ProjectDetailView({
   const { data: flowsData } = useFlows(projectId);
   const { data: auditsData } = useAudits(projectId);
   const { data: convData } = useConversations(projectId);
+  const createAuditMut = useCreateAudit(projectId);
 
   // Estado local (las tabs mutan/seleccionan); se siembra desde el backend.
   const [flujos, setFlujos] = React.useState<Flujo[]>([]);
@@ -146,23 +146,31 @@ export function ProjectDetailView({
     emphasis: string[];
     freeText: string;
   }) {
-    const flujo = flujos.find((f) => f.id === config.flujoId);
     const selected = conversations.filter((c) => c.selected);
-    const now = new Date().toISOString();
-    const audit: Audit = {
-      id: makeAuditId(),
-      name: `Auditoría ${formatDate(now)}`,
-      flujoId: config.flujoId,
-      flujoName: flujo?.name ?? "—",
-      conversationCount: selected.length,
-      emphasis: config.emphasis,
-      freeText: config.freeText,
-      createdAt: now,
-      status: "active",
-      report: buildReport(selected),
-    };
-    setAudits((prev) => [audit, ...prev]);
-    toast.success(`Auditoría corrida sobre ${selected.length} conversaciones`);
+    if (selected.length === 0) {
+      toast.error("Seleccioná al menos una conversación");
+      return;
+    }
+    // POST real -> el backend crea la auditoría en "running" y encola el judge
+    // (run_audit). La lista (useAudits) hace polling y refleja el resultado.
+    createAuditMut.mutate(
+      {
+        flujoId: config.flujoId,
+        conversationIds: selected.map((c) => c.id),
+        emphasis: config.emphasis,
+        freeText: config.freeText,
+      },
+      {
+        onSuccess: () =>
+          toast.success(
+            `Auditoría en curso sobre ${selected.length} conversaciones`,
+          ),
+        onError: (e) =>
+          toast.error(
+            e instanceof Error ? e.message : "No se pudo crear la auditoría",
+          ),
+      },
+    );
   }
 
   function archiveAudit(id: string) {

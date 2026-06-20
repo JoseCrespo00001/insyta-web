@@ -32,7 +32,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { formatDateTime } from "@/lib/format";
 import { EMPHASIS_OPTIONS } from "@/lib/projects/mock";
-import type { Audit, Conversation, Flujo } from "@/lib/projects/types";
+import { useAudit } from "@/lib/queries";
+import type { Audit, Conversation, Flujo, Report } from "@/lib/projects/types";
 import { cn } from "@/lib/utils";
 
 export function AuditoriasTab({
@@ -64,6 +65,12 @@ export function AuditoriasTab({
   const [viewingConv, setViewingConv] = React.useState<Conversation | null>(
     null,
   );
+  // Detalle real: GET /audits/{id} compone el report completo (conversaciones +
+  // evaluations + verdicts por mensaje). La lista solo trae el resumen.
+  const { data: auditDetail } = useAudit(viewing?.id ?? "");
+  const viewingReport: Report = ((
+    auditDetail as { report?: Report } | undefined
+  )?.report ?? viewing?.report) as Report;
 
   function toggleEmphasis(key: string) {
     setEmphasis((prev) =>
@@ -118,7 +125,15 @@ export function AuditoriasTab({
               <h2 className="text-xl font-semibold tracking-tight">
                 {viewing.name}
               </h2>
-              {viewing.status === "archived" ? (
+              {viewing.status === "running" ? (
+                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+                  En curso…
+                </span>
+              ) : viewing.status === "failed" ? (
+                <span className="rounded-full bg-score-critical/15 px-2 py-0.5 text-xs font-medium text-score-critical">
+                  Falló
+                </span>
+              ) : viewing.status === "archived" ? (
                 <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
                   Archivada
                 </span>
@@ -141,10 +156,14 @@ export function AuditoriasTab({
             }}
           />
         </div>
-        <ReportView
-          report={viewing.report}
-          onSelectConversation={setViewingConv}
-        />
+        {viewingReport ? (
+          <ReportView
+            report={viewingReport}
+            onSelectConversation={setViewingConv}
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground">Cargando reporte…</p>
+        )}
       </div>
     );
   }
@@ -278,7 +297,15 @@ export function AuditoriasTab({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
                   {a.name}
-                  {a.status === "archived" ? (
+                  {a.status === "running" ? (
+                    <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-normal text-primary">
+                      En curso…
+                    </span>
+                  ) : a.status === "failed" ? (
+                    <span className="rounded-full bg-score-critical/15 px-2 py-0.5 text-xs font-normal text-score-critical">
+                      Falló
+                    </span>
+                  ) : a.status === "archived" ? (
                     <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
                       Archivada
                     </span>
@@ -291,8 +318,13 @@ export function AuditoriasTab({
               </CardHeader>
               <CardContent className="flex items-center justify-between gap-2">
                 <span className="text-sm text-muted-foreground">
-                  {a.report.satisfaction.satisfecho} satisfechas ·{" "}
-                  {a.report.failing.length} fallidas
+                  {a.status === "running"
+                    ? "El judge está evaluando…"
+                    : a.status === "failed"
+                      ? "El judge no pudo completar la auditoría"
+                      : `${a.report.satisfaction?.satisfecho ?? 0} satisfechas · ${
+                          a.report.total ?? a.conversationCount
+                        } auditadas`}
                 </span>
                 <Button
                   variant="outline"
