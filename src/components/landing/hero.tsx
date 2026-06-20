@@ -18,7 +18,7 @@ export function Hero() {
   return (
     <section className="relative isolate overflow-hidden">
       <div className="container py-24 md:py-32">
-        <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-8">
+        <div className="grid items-center gap-12 lg:grid-cols-2 lg:items-end lg:gap-8">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}

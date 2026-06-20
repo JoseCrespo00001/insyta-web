@@ -163,6 +163,7 @@ export function ConversationExpediente({
                 initial={{ opacity: 0, x: -28 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, ease: EASE, delay: 0.4 }}
+                className="h-full"
               >
                 <ChatPane conversation={conversation} onClose={onClose} />
               </motion.div>
@@ -170,6 +171,7 @@ export function ConversationExpediente({
                 initial={{ opacity: 0, x: 28 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8, ease: EASE, delay: 0.55 }}
+                className="h-full"
               >
                 <ReportPane conversation={conversation} />
               </motion.div>
@@ -190,7 +192,7 @@ function ChatPane({
 }) {
   const Channel = CHANNEL_ICON[conversation.channel];
   return (
-    <div className="flex flex-col rounded-xl border bg-card/70 p-4">
+    <div className="flex h-full flex-col rounded-xl border bg-card/70 p-4">
       <div className="flex items-center justify-between gap-2 border-b pb-3">
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -249,7 +251,7 @@ function ChatPane({
 function ReportPane({ conversation }: { conversation: Conversation }) {
   const { report, score } = conversation;
   return (
-    <div className="flex flex-col gap-3 rounded-xl border bg-card/70 p-4">
+    <div className="flex h-full flex-col gap-3 rounded-xl border bg-card/70 p-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Reporte de la conversación

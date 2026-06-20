@@ -12,10 +12,9 @@ const CHANNEL_ICON = { whatsapp: MessageCircle, instagram: AtSign } as const;
 // Abanico diagonal: cada card baja ~4.5rem, así el header (icono+tema+score) queda
 // expuesto y clickeable. La del frente, nítida; las de atrás, levemente tenues.
 const STACK = [
-  "[grid-area:stack] -translate-x-6 translate-y-0 opacity-80 hover:-translate-y-1 hover:opacity-100",
-  "[grid-area:stack] -translate-x-2 translate-y-[6rem] opacity-85 hover:translate-y-[5.5rem] hover:opacity-100",
-  "[grid-area:stack] translate-x-2 translate-y-[12rem] opacity-90 hover:translate-y-[11.5rem] hover:opacity-100",
-  "[grid-area:stack] translate-x-6 translate-y-[18rem] hover:translate-y-[17.5rem]",
+  "[grid-area:stack] -translate-x-5 translate-y-0 opacity-85 hover:-translate-y-1 hover:opacity-100",
+  "[grid-area:stack] translate-x-0 translate-y-[6rem] opacity-90 hover:translate-y-[5.5rem] hover:opacity-100",
+  "[grid-area:stack] translate-x-5 translate-y-[12rem] hover:translate-y-[11.5rem]",
 ];
 
 export function ConversationCards({
@@ -26,8 +25,8 @@ export function ConversationCards({
   selectedId?: string | null;
 }) {
   return (
-    <div className="grid min-h-[31rem] w-full [grid-template-areas:'stack'] items-start justify-items-center">
-      {CONVERSATIONS.map((c, i) => {
+    <div className="grid min-h-[24rem] w-full [grid-template-areas:'stack'] items-start justify-items-center">
+      {CONVERSATIONS.slice(0, 3).map((c, i) => {
         const Icon = CHANNEL_ICON[c.channel];
         return (
           <DisplayCard
