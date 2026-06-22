@@ -7,9 +7,12 @@ import {
   ArrowLeft,
   GitBranch,
   Lightbulb,
+  Loader2,
+  Play,
   Sparkles,
   Trash2,
   Users,
+  Wrench,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -25,6 +28,7 @@ import {
   type FlowSuggestionKind,
 } from "@/lib/projects/flow-analysis";
 import {
+  useAuditFlow,
   useDeleteFlow,
   useFlow,
   useFlowImprovements,
@@ -67,12 +71,79 @@ function SuggestionCard({ s }: { s: FlowSuggestion }) {
   );
 }
 
+const LLM_TYPE_ICON: Record<string, typeof Sparkles> = {
+  add_tool: Wrench,
+  multi_agent: Users,
+  split_prompt: Lightbulb,
+  add_condition: GitBranch,
+  add_memory: Sparkles,
+  add_fallback: AlertTriangle,
+  rag: Sparkles,
+  structure: AlertTriangle,
+};
+
+function LlmSuggestion({
+  s,
+}: {
+  s: {
+    type: string;
+    title: string;
+    detail: string;
+    target: string;
+    severity: string;
+    impact: string;
+  };
+}) {
+  const Icon = LLM_TYPE_ICON[s.type] ?? Sparkles;
+  const crit = s.severity === "critical";
+  const warn = s.severity === "warning";
+  return (
+    <div
+      className={cn(
+        "flex gap-3 rounded-lg border p-3",
+        crit && "border-score-critical/30 bg-score-critical/5",
+        warn && "border-score-risk/30 bg-score-risk/5",
+      )}
+    >
+      <div
+        className={cn(
+          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+          crit
+            ? "bg-score-critical/15 text-score-critical"
+            : warn
+              ? "bg-score-risk/15 text-score-risk"
+              : "bg-primary/15 text-primary",
+        )}
+      >
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-sm font-medium">{s.title}</p>
+          {s.impact ? (
+            <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+              {s.impact}
+            </span>
+          ) : null}
+        </div>
+        <p className="mt-0.5 text-sm text-muted-foreground">{s.detail}</p>
+        {s.target && s.target !== "flujo" ? (
+          <p className="mt-1 text-xs text-muted-foreground">
+            En: <span className="font-medium">{s.target}</span>
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export function FlowDetailView({ flowId }: { flowId: string }) {
   const router = useRouter();
   const { data: flujo, isLoading } = useFlow(flowId);
   const updateFlow = useUpdateFlow();
   const deleteFlow = useDeleteFlow();
   const { data: improvements = [] } = useFlowImprovements(flowId);
+  const flowAudit = useAuditFlow(flowId);
 
   const [draft, setDraft] = React.useState("");
   React.useEffect(() => {
@@ -83,6 +154,15 @@ export function FlowDetailView({ flowId }: { flowId: string }) {
     () => analyzeFlow(flujo?.json ?? ""),
     [flujo?.json],
   );
+
+  function runFlowAudit(mode: "standard" | "deep") {
+    flowAudit.mutate(mode, {
+      onError: (e) =>
+        toast.error(
+          e instanceof Error ? e.message : "No se pudo auditar el flujo",
+        ),
+    });
+  }
 
   function saveJson() {
     let parsed: unknown;
@@ -200,25 +280,93 @@ export function FlowDetailView({ flowId }: { flowId: string }) {
           <div className="space-y-5">
             <FlujoPlayground flujoName={flujo.name} />
 
-            {/* Sugerencias estructurales (heurística sobre el grafo) */}
+            {/* Auditoría del flujo (LLM experto en Langflow) */}
             <Card>
               <CardContent className="space-y-3 p-4">
-                <div className="flex items-center gap-2">
-                  <Lightbulb className="h-4 w-4 text-primary" />
-                  <h3 className="text-sm font-semibold">
-                    Sugerencias del flujo
-                  </h3>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Lightbulb className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-semibold">Auditar el flujo</h3>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      disabled={flowAudit.isPending}
+                      onClick={() => runFlowAudit("standard")}
+                    >
+                      {flowAudit.isPending &&
+                      flowAudit.variables === "standard" ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Play className="h-4 w-4" />
+                      )}
+                      Auditar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={flowAudit.isPending}
+                      onClick={() => runFlowAudit("deep")}
+                    >
+                      {flowAudit.isPending && flowAudit.variables === "deep" ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4" />
+                      )}
+                      Completo (Plus)
+                    </Button>
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {analysis.stats.nodeCount} nodos · {analysis.stats.edgeCount}{" "}
                   conexiones · {analysis.stats.agentCount} agentes ·{" "}
                   {analysis.stats.hasRouter ? "con ruteo" : "sin ruteo"}
                 </p>
-                <div className="space-y-2">
-                  {analysis.suggestions.map((s, i) => (
-                    <SuggestionCard key={i} s={s} />
-                  ))}
-                </div>
+
+                {flowAudit.isPending ? (
+                  <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    Analizando el flujo con el experto en Langflow…
+                  </div>
+                ) : flowAudit.data ? (
+                  <div className="space-y-3">
+                    <div className="rounded-lg border p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">
+                          Completitud
+                        </span>
+                        <span className="text-sm font-semibold">
+                          {flowAudit.data.completeness}/100
+                        </span>
+                      </div>
+                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-primary"
+                          style={{ width: `${flowAudit.data.completeness}%` }}
+                        />
+                      </div>
+                      {flowAudit.data.summary ? (
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          {flowAudit.data.summary}
+                        </p>
+                      ) : null}
+                    </div>
+                    {flowAudit.data.suggestions.map((s, i) => (
+                      <LlmSuggestion key={i} s={s} />
+                    ))}
+                  </div>
+                ) : (
+                  // Sin auditoría LLM aún: análisis rápido heurístico.
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Análisis rápido (sin IA). Tocá “Auditar” para el análisis
+                      completo con el experto en Langflow.
+                    </p>
+                    {analysis.suggestions.map((s, i) => (
+                      <SuggestionCard key={i} s={s} />
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 

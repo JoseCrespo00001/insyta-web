@@ -61,6 +61,29 @@ export function useFlows(projectId: string) {
   });
 }
 
+// Auditoría del flujo en sí (LLM experto en Langflow). Es acción (cuesta tokens)
+// -> mutación, no query.
+export type FlowAuditResult = {
+  completeness: number;
+  summary: string;
+  mode: string;
+  suggestions: Array<{
+    type: string;
+    title: string;
+    detail: string;
+    target: string;
+    severity: string;
+    impact: string;
+  }>;
+};
+
+export function useAuditFlow(flowId: string) {
+  return useMutation({
+    mutationFn: (mode: "standard" | "deep") =>
+      api.post<FlowAuditResult>(`/api/v1/flows/${flowId}/audit`, { mode }),
+  });
+}
+
 // Todos los flujos del tenant (vista global de Mejoras).
 export function useAllFlows() {
   return useQuery({
