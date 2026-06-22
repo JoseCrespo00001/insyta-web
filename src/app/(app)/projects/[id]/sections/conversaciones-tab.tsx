@@ -9,6 +9,7 @@ import {
   MessagesSquare,
   Pin,
   Search,
+  Trash2,
   Upload,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -21,7 +22,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/api";
 import { formatDate } from "@/lib/format";
-import { useConversation, useUploadCsv, useUploadStatus } from "@/lib/queries";
+import {
+  useConversation,
+  useDeleteConversation,
+  useDeleteUpload,
+  useUploadCsv,
+  useUploadStatus,
+} from "@/lib/queries";
 import type {
   ChatMessage,
   Conversation,
@@ -109,6 +116,28 @@ export function ConversacionesTab({
   const fileRef = React.useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
   const { data: convDetail } = useConversation(viewingId);
+  const deleteConv = useDeleteConversation(projectId);
+  const deleteUpload = useDeleteUpload(projectId);
+
+  function handleDeleteSelected(ids: string[]) {
+    if (ids.length === 0) return;
+    if (!window.confirm(`¿Eliminar ${ids.length} conversación(es)?`)) return;
+    Promise.all(ids.map((id) => deleteConv.mutateAsync(id)))
+      .then(() => toast.success(`${ids.length} conversación(es) eliminada(s)`))
+      .catch((e) =>
+        toast.error(e instanceof Error ? e.message : "No se pudo eliminar"),
+      );
+  }
+
+  function handleDeleteCsv(uploadId: string, filename: string) {
+    if (!window.confirm(`¿Eliminar el CSV "${filename}" y sus conversaciones?`))
+      return;
+    deleteUpload.mutate(uploadId, {
+      onSuccess: () => toast.success("CSV eliminado"),
+      onError: (e) =>
+        toast.error(e instanceof Error ? e.message : "No se pudo eliminar"),
+    });
+  }
 
   // Carga de CSV + seguimiento de progreso.
   const uploadCsv = useUploadCsv(projectId);
@@ -292,6 +321,22 @@ export function ConversacionesTab({
         <span className="text-sm text-muted-foreground">
           {selectedCount} de {conversations.length} seleccionadas
         </span>
+        {selectedCount > 0 ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            disabled={deleteConv.isPending}
+            onClick={() =>
+              handleDeleteSelected(
+                conversations.filter((c) => c.selected).map((c) => c.id),
+              )
+            }
+          >
+            <Trash2 className="h-4 w-4" />
+            Eliminar ({selectedCount})
+          </Button>
+        ) : null}
         <Button
           variant="ghost"
           size="sm"
@@ -372,6 +417,21 @@ export function ConversacionesTab({
                   <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                     {selectedInGroup}/{all.length}
                   </span>
+                  {meta.id !== "sin-grupo" ? (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                      disabled={deleteUpload.isPending}
+                      aria-label={`Eliminar CSV ${meta.filename}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteCsv(meta.id, meta.filename);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  ) : null}
                   <ChevronDown
                     className={cn(
                       "h-4 w-4 shrink-0 text-muted-foreground transition-transform",

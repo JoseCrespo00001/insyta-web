@@ -15,6 +15,7 @@ import {
   useAudits,
   useConversations,
   useCreateAudit,
+  useDeleteConversation,
   useFlows,
   useProjects,
 } from "@/lib/queries";
@@ -71,6 +72,7 @@ export function ProjectDetailView({
   const { data: auditsData } = useAudits(projectId);
   const { data: convData } = useConversations(projectId);
   const createAuditMut = useCreateAudit(projectId);
+  const deleteConvMut = useDeleteConversation(projectId);
 
   // Estado local (las tabs mutan/seleccionan); se siembra desde el backend.
   const [flujos, setFlujos] = React.useState<Flujo[]>([]);
@@ -137,8 +139,12 @@ export function ProjectDetailView({
   }
 
   function deleteConversation(id: string) {
-    setConversations((prev) => prev.filter((c) => c.id !== id));
-    toast.success("Conversación eliminada");
+    setConversations((prev) => prev.filter((c) => c.id !== id)); // optimista
+    deleteConvMut.mutate(id, {
+      onSuccess: () => toast.success("Conversación eliminada"),
+      onError: (e) =>
+        toast.error(e instanceof Error ? e.message : "No se pudo eliminar"),
+    });
   }
 
   function createAudit(config: {

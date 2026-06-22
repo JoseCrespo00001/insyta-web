@@ -207,6 +207,31 @@ export function useGlobalConversations() {
   });
 }
 
+export function useDeleteConversation(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId: string) =>
+      api.del<void>(`/api/v1/conversations/${conversationId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["conversations", projectId] });
+      qc.invalidateQueries({ queryKey: ["conversations", "all"] });
+    },
+  });
+}
+
+export function useDeleteUpload(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (uploadId: string) =>
+      api.del<void>(`/api/v1/uploads/${uploadId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["conversations", projectId] });
+      qc.invalidateQueries({ queryKey: ["conversations", "all"] });
+      qc.invalidateQueries({ queryKey: ["uploads", projectId] });
+    },
+  });
+}
+
 export type ConversationDetail = {
   public_id: string;
   external_id: string;
