@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
+import { AuditComposer } from "./sections/audit-composer";
 import { AuditoriasTab } from "./sections/auditorias-tab";
 import { ConversacionesTab } from "./sections/conversaciones-tab";
 import { FlujosTab } from "./sections/flujos-tab";
@@ -78,6 +79,9 @@ export function ProjectDetailView({
   const [flujos, setFlujos] = React.useState<Flujo[]>([]);
   const [conversations, setConversations] = React.useState<Conversation[]>([]);
   const [audits, setAudits] = React.useState<Audit[]>([]);
+  const [tab, setTab] = React.useState(initialTab);
+  // Cuando !== null se muestra la página inline para armar una auditoría.
+  const [composing, setComposing] = React.useState<string[] | null>(null);
 
   React.useEffect(() => {
     if (flowsData) setFlujos(flowsData as Flujo[]);
@@ -167,10 +171,13 @@ export function ProjectDetailView({
         freeText: config.freeText,
       },
       {
-        onSuccess: () =>
+        onSuccess: () => {
           toast.success(
             `Auditoría en curso sobre ${config.conversationIds.length} conversaciones`,
-          ),
+          );
+          setComposing(null);
+          setTab("auditorias");
+        },
         onError: (e) =>
           toast.error(
             e instanceof Error ? e.message : "No se pudo crear la auditoría",
@@ -218,51 +225,64 @@ export function ProjectDetailView({
         <p className="text-sm text-muted-foreground">{projectId}</p>
       </div>
 
-      <Tabs defaultValue={initialTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="resumen">Resumen</TabsTrigger>
-          <TabsTrigger value="flujos">Flujos</TabsTrigger>
-          <TabsTrigger value="conversaciones">Conversaciones</TabsTrigger>
-          <TabsTrigger value="auditorias">Auditorías</TabsTrigger>
-        </TabsList>
+      {composing !== null ? (
+        <AuditComposer
+          flujos={flujos}
+          conversations={conversations}
+          initialSelectedIds={composing}
+          onCancel={() => setComposing(null)}
+          onRun={createAudit}
+        />
+      ) : (
+        <Tabs value={tab} onValueChange={setTab} className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="resumen">Resumen</TabsTrigger>
+            <TabsTrigger value="flujos">Flujos</TabsTrigger>
+            <TabsTrigger value="conversaciones">Conversaciones</TabsTrigger>
+            <TabsTrigger value="auditorias">Auditorías</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="resumen">
-          <ResumenTab
-            flujos={flujos}
-            conversations={conversations}
-            audits={audits}
-            onArchiveAudit={archiveAudit}
-            onDeleteAudit={deleteAudit}
-          />
-        </TabsContent>
+          <TabsContent value="resumen">
+            <ResumenTab
+              flujos={flujos}
+              conversations={conversations}
+              audits={audits}
+              onArchiveAudit={archiveAudit}
+              onDeleteAudit={deleteAudit}
+            />
+          </TabsContent>
 
-        <TabsContent value="flujos">
-          <FlujosTab flujos={flujos} projectId={projectId} />
-        </TabsContent>
+          <TabsContent value="flujos">
+            <FlujosTab flujos={flujos} projectId={projectId} />
+          </TabsContent>
 
-        <TabsContent value="conversaciones">
-          <ConversacionesTab
-            conversations={conversations}
-            projectId={projectId}
-            onToggle={toggleConversation}
-            onToggleAll={toggleAllConversations}
-            onToggleGroup={toggleGroup}
-            onTogglePin={togglePinConversation}
-            onDeleteConversation={deleteConversation}
-          />
-        </TabsContent>
+          <TabsContent value="conversaciones">
+            <ConversacionesTab
+              conversations={conversations}
+              projectId={projectId}
+              onToggle={toggleConversation}
+              onToggleAll={toggleAllConversations}
+              onToggleGroup={toggleGroup}
+              onTogglePin={togglePinConversation}
+              onDeleteConversation={deleteConversation}
+              onAuditSelected={(ids) => setComposing(ids)}
+            />
+          </TabsContent>
 
-        <TabsContent value="auditorias">
-          <AuditoriasTab
-            flujos={flujos}
-            conversations={conversations}
-            audits={audits}
-            onCreateAudit={createAudit}
-            onArchiveAudit={archiveAudit}
-            onDeleteAudit={deleteAudit}
-          />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="auditorias">
+            <AuditoriasTab
+              audits={audits}
+              onNewAudit={() =>
+                setComposing(
+                  conversations.filter((c) => c.selected).map((c) => c.id),
+                )
+              }
+              onArchiveAudit={archiveAudit}
+              onDeleteAudit={deleteAudit}
+            />
+          </TabsContent>
+        </Tabs>
+      )}
     </div>
   );
 }

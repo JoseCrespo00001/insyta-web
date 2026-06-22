@@ -9,6 +9,7 @@ import {
   MessagesSquare,
   Pin,
   Search,
+  Sparkles,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -101,6 +102,7 @@ export function ConversacionesTab({
   onToggleGroup,
   onTogglePin,
   onDeleteConversation,
+  onAuditSelected,
 }: {
   conversations: Conversation[];
   projectId: string;
@@ -109,6 +111,7 @@ export function ConversacionesTab({
   onToggleGroup: (groupId: string, selectAll: boolean) => void;
   onTogglePin: (id: string) => void;
   onDeleteConversation: (id: string) => void;
+  onAuditSelected: (ids: string[]) => void;
 }) {
   const [query, setQuery] = React.useState("");
   const [viewingId, setViewingId] = React.useState<string | null>(null);
@@ -322,20 +325,33 @@ export function ConversacionesTab({
           {selectedCount} de {conversations.length} seleccionadas
         </span>
         {selectedCount > 0 ? (
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-destructive hover:text-destructive"
-            disabled={deleteConv.isPending}
-            onClick={() =>
-              handleDeleteSelected(
-                conversations.filter((c) => c.selected).map((c) => c.id),
-              )
-            }
-          >
-            <Trash2 className="h-4 w-4" />
-            Eliminar ({selectedCount})
-          </Button>
+          <>
+            <Button
+              size="sm"
+              onClick={() =>
+                onAuditSelected(
+                  conversations.filter((c) => c.selected).map((c) => c.id),
+                )
+              }
+            >
+              <Sparkles className="h-4 w-4" />
+              Auditar ({selectedCount})
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              disabled={deleteConv.isPending}
+              onClick={() =>
+                handleDeleteSelected(
+                  conversations.filter((c) => c.selected).map((c) => c.id),
+                )
+              }
+            >
+              <Trash2 className="h-4 w-4" />
+              Eliminar ({selectedCount})
+            </Button>
+          </>
         ) : null}
         <Button
           variant="ghost"
