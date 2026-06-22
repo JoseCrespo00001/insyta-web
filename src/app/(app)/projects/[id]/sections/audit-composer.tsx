@@ -34,12 +34,14 @@ export function AuditComposer({
   initialSelectedIds: string[];
   onCancel: () => void;
   onRun: (config: {
+    name: string;
     flujoId: string;
     conversationIds: string[];
     emphasis: string[];
     freeText: string;
   }) => void;
 }) {
+  const [name, setName] = React.useState("");
   const [flujoId, setFlujoId] = React.useState(flujos[0]?.id ?? "");
   const [emphasis, setEmphasis] = React.useState<string[]>([]);
   const [freeText, setFreeText] = React.useState("");
@@ -106,7 +108,13 @@ export function AuditComposer({
         </div>
         <Button
           onClick={() =>
-            onRun({ flujoId, conversationIds: [...picked], emphasis, freeText })
+            onRun({
+              name,
+              flujoId,
+              conversationIds: [...picked],
+              emphasis,
+              freeText,
+            })
           }
           disabled={!canRun}
         >
@@ -120,6 +128,19 @@ export function AuditComposer({
         <div className="space-y-4">
           <Card>
             <CardContent className="space-y-4 p-4">
+              <div className="space-y-2">
+                <Label htmlFor="audit-name">Nombre de la auditoría</Label>
+                <Input
+                  id="audit-name"
+                  placeholder="Ej: Auditoría ventas — junio"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Opcional. Si lo dejás vacío se nombra por el flujo.
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <Label>Flujo a auditar</Label>
                 {flujos.length === 0 ? (

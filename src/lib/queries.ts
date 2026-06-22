@@ -258,6 +258,7 @@ export function useConversation(convId: string | null) {
 
 // ── Audits ────────────────────────────────────────────────────────────────
 export type AuditPayload = {
+  name?: string;
   flujoId?: string;
   conversationIds: string[];
   emphasis: string[];

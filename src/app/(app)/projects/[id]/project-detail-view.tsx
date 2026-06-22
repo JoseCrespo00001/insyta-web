@@ -152,6 +152,7 @@ export function ProjectDetailView({
   }
 
   function createAudit(config: {
+    name: string;
     flujoId: string;
     conversationIds: string[];
     emphasis: string[];
@@ -165,6 +166,7 @@ export function ProjectDetailView({
     // (run_audit). La lista (useAudits) hace polling y refleja el resultado.
     createAuditMut.mutate(
       {
+        name: config.name,
         flujoId: config.flujoId,
         conversationIds: config.conversationIds,
         emphasis: config.emphasis,
