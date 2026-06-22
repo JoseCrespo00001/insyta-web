@@ -12,6 +12,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -49,18 +51,63 @@ export function AuditoriasTab({
   audits: Audit[];
   onCreateAudit: (config: {
     flujoId: string;
+    conversationIds: string[];
     emphasis: string[];
     freeText: string;
   }) => void;
   onArchiveAudit: (id: string) => void;
   onDeleteAudit: (id: string) => void;
 }) {
-  const selected = conversations.filter((c) => c.selected);
-
   const [open, setOpen] = React.useState(false);
   const [flujoId, setFlujoId] = React.useState(flujos[0]?.id ?? "");
   const [emphasis, setEmphasis] = React.useState<string[]>([]);
   const [freeText, setFreeText] = React.useState("");
+  // Selección de conversaciones a auditar (dentro del diálogo).
+  const [picked, setPicked] = React.useState<Set<string>>(new Set());
+  const selected = conversations.filter((c) => picked.has(c.id));
+  const [convQuery, setConvQuery] = React.useState("");
+
+  // Al abrir, sembrar con lo que ya esté seleccionado en la pestaña.
+  function openDialog(next: boolean) {
+    if (next) {
+      setPicked(
+        new Set(conversations.filter((c) => c.selected).map((c) => c.id)),
+      );
+      setConvQuery("");
+    }
+    setOpen(next);
+  }
+
+  function togglePick(id: string) {
+    setPicked((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  }
+
+  const convMatches = (c: Conversation) => {
+    const q = convQuery.trim().toLowerCase();
+    return (
+      !q ||
+      c.contactName.toLowerCase().includes(q) ||
+      c.externalId.includes(q) ||
+      c.preview.toLowerCase().includes(q)
+    );
+  };
+  const visibleConvs = conversations.filter(convMatches);
+  const allVisiblePicked =
+    visibleConvs.length > 0 && visibleConvs.every((c) => picked.has(c.id));
+
+  function toggleAllVisible() {
+    setPicked((prev) => {
+      const n = new Set(prev);
+      if (allVisiblePicked) visibleConvs.forEach((c) => n.delete(c.id));
+      else visibleConvs.forEach((c) => n.add(c.id));
+      return n;
+    });
+  }
   const [viewing, setViewing] = React.useState<Audit | null>(null);
   const [viewingConv, setViewingConv] = React.useState<Conversation | null>(
     null,
@@ -80,17 +127,14 @@ export function AuditoriasTab({
 
   const canRun = Boolean(flujoId) && selected.length > 0;
 
-  // Payload que se enviaría al backend.
-  const payload = {
-    flujoId,
-    conversationIds: selected.map((c) => c.id),
-    emphasis,
-    freeText,
-  };
-
   function run() {
     if (!canRun) return;
-    onCreateAudit({ flujoId, emphasis, freeText });
+    onCreateAudit({
+      flujoId,
+      conversationIds: selected.map((c) => c.id),
+      emphasis,
+      freeText,
+    });
     setEmphasis([]);
     setFreeText("");
     setOpen(false);
@@ -174,7 +218,7 @@ export function AuditoriasTab({
         <p className="text-sm text-muted-foreground">
           Corré una auditoría sobre un flujo y las conversaciones seleccionadas.
         </p>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={openDialog}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4" />
@@ -185,8 +229,8 @@ export function AuditoriasTab({
             <DialogHeader>
               <DialogTitle>Nueva auditoría</DialogTitle>
               <DialogDescription>
-                Elegí el flujo, qué conversaciones auditar y en qué hacer
-                énfasis. Esto se envía al backend para correr el análisis.
+                Elegí el flujo, seleccioná qué conversaciones auditar y en qué
+                hacer énfasis. El judge las analiza y arma el reporte.
               </DialogDescription>
             </DialogHeader>
 
@@ -214,16 +258,68 @@ export function AuditoriasTab({
                 )}
               </div>
 
-              {/* Conversaciones */}
-              <div className="space-y-1">
-                <Label>Conversaciones</Label>
-                <p className="text-sm text-muted-foreground">
-                  {selected.length} seleccionadas
-                  {conversations.length > 0
-                    ? ` de ${conversations.length}`
-                    : ""}
-                  . Ajustá la selección en la pestaña Conversaciones.
-                </p>
+              {/* Conversaciones — selección dentro del diálogo */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Label>
+                    Conversaciones a auditar · {selected.length}/
+                    {conversations.length}
+                  </Label>
+                  {conversations.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={toggleAllVisible}
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      {allVisiblePicked
+                        ? "Deseleccionar todas"
+                        : "Seleccionar todas"}
+                    </button>
+                  ) : null}
+                </div>
+                {conversations.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No hay conversaciones cargadas. Subí un CSV en la pestaña
+                    Conversaciones.
+                  </p>
+                ) : (
+                  <>
+                    <Input
+                      placeholder="Buscar contacto, número o texto…"
+                      value={convQuery}
+                      onChange={(e) => setConvQuery(e.target.value)}
+                      className="h-8"
+                    />
+                    <div className="max-h-56 space-y-1 overflow-y-auto rounded-md border p-1">
+                      {visibleConvs.length === 0 ? (
+                        <p className="px-2 py-3 text-sm text-muted-foreground">
+                          Sin resultados.
+                        </p>
+                      ) : (
+                        visibleConvs.map((c) => (
+                          <label
+                            key={c.id}
+                            className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted"
+                          >
+                            <Checkbox
+                              checked={picked.has(c.id)}
+                              onCheckedChange={() => togglePick(c.id)}
+                            />
+                            <span className="min-w-0 flex-1 truncate text-sm">
+                              <span className="font-medium">
+                                {c.contactName}
+                              </span>{" "}
+                              <span className="text-muted-foreground">
+                                #{c.externalId}
+                                {c.preview ? ` — ${c.preview}` : ""}
+                              </span>
+                            </span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Énfasis */}
@@ -255,16 +351,6 @@ export function AuditoriasTab({
                   onChange={(e) => setFreeText(e.target.value)}
                   rows={3}
                 />
-              </div>
-
-              {/* Payload preview */}
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">
-                  Se enviará al backend
-                </Label>
-                <pre className="max-h-40 overflow-auto rounded-md bg-muted p-3 text-xs">
-                  {JSON.stringify(payload, null, 2)}
-                </pre>
               </div>
             </div>
 

@@ -149,11 +149,11 @@ export function ProjectDetailView({
 
   function createAudit(config: {
     flujoId: string;
+    conversationIds: string[];
     emphasis: string[];
     freeText: string;
   }) {
-    const selected = conversations.filter((c) => c.selected);
-    if (selected.length === 0) {
+    if (config.conversationIds.length === 0) {
       toast.error("Seleccioná al menos una conversación");
       return;
     }
@@ -162,14 +162,14 @@ export function ProjectDetailView({
     createAuditMut.mutate(
       {
         flujoId: config.flujoId,
-        conversationIds: selected.map((c) => c.id),
+        conversationIds: config.conversationIds,
         emphasis: config.emphasis,
         freeText: config.freeText,
       },
       {
         onSuccess: () =>
           toast.success(
-            `Auditoría en curso sobre ${selected.length} conversaciones`,
+            `Auditoría en curso sobre ${config.conversationIds.length} conversaciones`,
           ),
         onError: (e) =>
           toast.error(
