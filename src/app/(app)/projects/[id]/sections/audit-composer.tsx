@@ -1,5 +1,13 @@
 import * as React from "react";
-import { ArrowLeft, Building2, Play, Target, Workflow, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Building2,
+  Play,
+  Target,
+  Upload,
+  Workflow,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -25,6 +33,7 @@ import { cn } from "@/lib/utils";
  * izquierda = flujo + énfasis; derecha = conversaciones a auditar.
  */
 const OBJECTIVES = [
+  { key: "todos", label: "Todos los objetivos" },
   { key: "leads", label: "Recaudar datos / Leads" },
   { key: "ventas", label: "Vender / Conversión" },
   { key: "awareness", label: "Que conozcan la marca" },
@@ -63,6 +72,23 @@ export function AuditComposer({
   const [freeText, setFreeText] = React.useState("");
   const [company, setCompany] = React.useState(companyContext ?? "");
   const updateProject = useUpdateProject();
+  const docRef = React.useRef<HTMLInputElement>(null);
+
+  async function handleDoc(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    if (/\.(pdf|docx?|xlsx?)$/i.test(file.name)) {
+      toast.error(
+        "Por ahora solo texto (.txt, .md, .csv). PDF/Word: próximamente.",
+      );
+      return;
+    }
+    const text = (await file.text()).trim();
+    if (!text) return;
+    setCompany((prev) => (prev ? `${prev}\n\n${text}` : text));
+    toast.success(`Documento "${file.name}" cargado al texto`);
+  }
   const [picked, setPicked] = React.useState<Set<string>>(
     () => new Set(initialSelectedIds),
   );
@@ -100,6 +126,25 @@ export function AuditComposer({
       const n = new Set(prev);
       if (allVisiblePicked) visible.forEach((c) => n.delete(c.id));
       else visible.forEach((c) => n.add(c.id));
+      return n;
+    });
+  }
+
+  // Agrupar las visibles por CSV de origen (uploadGroupId), como en Conversaciones.
+  const groupIds = [...new Set(visible.map((c) => c.uploadGroupId))];
+  const groups = groupIds.map((gid, i) => {
+    const items = visible.filter((c) => c.uploadGroupId === gid);
+    return {
+      id: gid,
+      label: gid && gid !== "sin-grupo" ? `CSV ${i + 1}` : "Sin CSV",
+      items,
+      allPicked: items.length > 0 && items.every((c) => picked.has(c.id)),
+    };
+  });
+  function toggleGroup(items: Conversation[], select: boolean) {
+    setPicked((prev) => {
+      const n = new Set(prev);
+      items.forEach((c) => (select ? n.add(c.id) : n.delete(c.id)));
       return n;
     });
   }
@@ -273,10 +318,22 @@ export function AuditComposer({
                 onChange={(e) => setCompany(e.target.value)}
                 rows={5}
               />
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-xs text-muted-foreground">
-                  Se guarda en el proyecto y se reusa en cada auditoría.
-                </p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => docRef.current?.click()}
+                >
+                  <Upload className="h-4 w-4" />
+                  Subir documento
+                </Button>
+                <input
+                  ref={docRef}
+                  type="file"
+                  accept=".txt,.md,.csv,.json,text/*"
+                  className="hidden"
+                  onChange={handleDoc}
+                />
                 <Button
                   variant="outline"
                   size="sm"
@@ -340,37 +397,63 @@ export function AuditComposer({
                   onChange={(e) => setQuery(e.target.value)}
                   className="h-8"
                 />
-                <div className="max-h-[60vh] space-y-1 overflow-y-auto rounded-md border p-1">
+                <div className="max-h-[60vh] space-y-2 overflow-y-auto rounded-md border p-1">
                   {visible.length === 0 ? (
                     <p className="px-2 py-3 text-sm text-muted-foreground">
                       Sin resultados.
                     </p>
                   ) : (
-                    visible.map((c) => {
-                      const on = picked.has(c.id);
+                    groups.map((g) => {
+                      const pickedInGroup = g.items.filter((c) =>
+                        picked.has(c.id),
+                      ).length;
                       return (
-                        <label
-                          key={c.id}
-                          className={cn(
-                            "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted",
-                            on && "bg-primary/5",
-                          )}
-                        >
-                          <Checkbox
-                            checked={on}
-                            onCheckedChange={() => togglePick(c.id)}
-                          />
-                          <span className="min-w-0 flex-1 truncate text-sm">
-                            <span className="font-medium">{c.contactName}</span>{" "}
-                            <span className="text-muted-foreground">
-                              #{c.externalId}
-                              {c.preview ? ` — ${c.preview}` : ""}
+                        <div key={g.id || "sin-grupo"} className="space-y-0.5">
+                          {/* Cabecera del CSV: elegir todo el grupo */}
+                          <div className="flex items-center gap-2 rounded-md bg-muted/50 px-2 py-1.5">
+                            <Checkbox
+                              checked={g.allPicked}
+                              onCheckedChange={() =>
+                                toggleGroup(g.items, !g.allPicked)
+                              }
+                            />
+                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              {g.label}
                             </span>
-                          </span>
-                          {on ? (
-                            <X className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                          ) : null}
-                        </label>
+                            <span className="text-xs text-muted-foreground">
+                              · {pickedInGroup}/{g.items.length}
+                            </span>
+                          </div>
+                          {g.items.map((c) => {
+                            const on = picked.has(c.id);
+                            return (
+                              <label
+                                key={c.id}
+                                className={cn(
+                                  "ml-3 flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted",
+                                  on && "bg-primary/5",
+                                )}
+                              >
+                                <Checkbox
+                                  checked={on}
+                                  onCheckedChange={() => togglePick(c.id)}
+                                />
+                                <span className="min-w-0 flex-1 truncate text-sm">
+                                  <span className="font-medium">
+                                    {c.contactName}
+                                  </span>{" "}
+                                  <span className="text-muted-foreground">
+                                    #{c.externalId}
+                                    {c.preview ? ` — ${c.preview}` : ""}
+                                  </span>
+                                </span>
+                                {on ? (
+                                  <X className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                ) : null}
+                              </label>
+                            );
+                          })}
+                        </div>
                       );
                     })
                   )}
