@@ -153,6 +153,7 @@ export function ProjectDetailView({
 
   function createAudit(config: {
     name: string;
+    objective: string;
     flujoId: string;
     conversationIds: string[];
     emphasis: string[];
@@ -167,6 +168,7 @@ export function ProjectDetailView({
     createAuditMut.mutate(
       {
         name: config.name,
+        objective: config.objective,
         flujoId: config.flujoId,
         conversationIds: config.conversationIds,
         emphasis: config.emphasis,
@@ -232,6 +234,8 @@ export function ProjectDetailView({
           flujos={flujos}
           conversations={conversations}
           initialSelectedIds={composing}
+          projectId={projectId}
+          companyContext={project?.companyContext ?? null}
           onCancel={() => setComposing(null)}
           onRun={createAudit}
         />

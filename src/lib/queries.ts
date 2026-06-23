@@ -40,6 +40,22 @@ export function useProjects() {
   });
 }
 
+export function useUpdateProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      id: string;
+      name?: string;
+      companyContext?: string;
+    }) =>
+      api.patch<Project>(`/api/v1/projects/${input.id}`, {
+        name: input.name,
+        companyContext: input.companyContext,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["projects"] }),
+  });
+}
+
 export function useCreateProject() {
   const qc = useQueryClient();
   return useMutation({
@@ -282,6 +298,7 @@ export function useConversation(convId: string | null) {
 // ── Audits ────────────────────────────────────────────────────────────────
 export type AuditPayload = {
   name?: string;
+  objective?: string;
   flujoId?: string;
   conversationIds: string[];
   emphasis: string[];

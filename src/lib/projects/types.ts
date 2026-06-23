@@ -9,6 +9,7 @@ export type Project = {
   conversationCount: number;
   score: number | null; // null si todavía no se evaluó ninguna conversación
   updatedAt: string; // ISO date
+  companyContext?: string | null; // datos de la empresa (los usa el judge)
 };
 
 // ── Detalle del proyecto (mock; la lógica real la hace el backend) ──

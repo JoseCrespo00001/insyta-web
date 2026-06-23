@@ -1,5 +1,6 @@
 import * as React from "react";
-import { ArrowLeft, Play, Workflow, X } from "lucide-react";
+import { ArrowLeft, Building2, Play, Target, Workflow, X } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { EMPHASIS_OPTIONS } from "@/lib/projects/mock";
+import { useUpdateProject } from "@/lib/queries";
 import type { Conversation, Flujo } from "@/lib/projects/types";
 import { cn } from "@/lib/utils";
 
@@ -22,19 +24,32 @@ import { cn } from "@/lib/utils";
  * Página inline para armar una auditoría (reemplaza el modal):
  * izquierda = flujo + énfasis; derecha = conversaciones a auditar.
  */
+const OBJECTIVES = [
+  { key: "leads", label: "Recaudar datos / Leads" },
+  { key: "ventas", label: "Vender / Conversión" },
+  { key: "awareness", label: "Que conozcan la marca" },
+  { key: "soporte", label: "Soporte / Atención" },
+  { key: "agendar", label: "Agendar / Reservar" },
+];
+
 export function AuditComposer({
   flujos,
   conversations,
   initialSelectedIds,
+  projectId,
+  companyContext,
   onCancel,
   onRun,
 }: {
   flujos: Flujo[];
   conversations: Conversation[];
   initialSelectedIds: string[];
+  projectId: string;
+  companyContext: string | null;
   onCancel: () => void;
   onRun: (config: {
     name: string;
+    objective: string;
     flujoId: string;
     conversationIds: string[];
     emphasis: string[];
@@ -42,9 +57,12 @@ export function AuditComposer({
   }) => void;
 }) {
   const [name, setName] = React.useState("");
+  const [objective, setObjective] = React.useState("");
   const [flujoId, setFlujoId] = React.useState(flujos[0]?.id ?? "");
   const [emphasis, setEmphasis] = React.useState<string[]>([]);
   const [freeText, setFreeText] = React.useState("");
+  const [company, setCompany] = React.useState(companyContext ?? "");
+  const updateProject = useUpdateProject();
   const [picked, setPicked] = React.useState<Set<string>>(
     () => new Set(initialSelectedIds),
   );
@@ -110,6 +128,7 @@ export function AuditComposer({
           onClick={() =>
             onRun({
               name,
+              objective,
               flujoId,
               conversationIds: [...picked],
               emphasis,
@@ -138,6 +157,28 @@ export function AuditComposer({
                 />
                 <p className="text-xs text-muted-foreground">
                   Opcional. Si lo dejás vacío se nombra por el flujo.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Target className="h-3.5 w-3.5 text-primary" />
+                  Objetivo de la campaña
+                </Label>
+                <Select value={objective} onValueChange={setObjective}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="¿Qué buscás? (leads, ventas, …)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {OBJECTIVES.map((o) => (
+                      <SelectItem key={o.key} value={o.key}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  El judge puntúa según si la conversación cumple este objetivo.
                 </p>
               </div>
 
@@ -216,6 +257,52 @@ export function AuditComposer({
                 onChange={(e) => setFreeText(e.target.value)}
                 rows={4}
               />
+            </CardContent>
+          </Card>
+
+          {/* Datos de la empresa — se guardan en el proyecto y los reusa el judge */}
+          <Card>
+            <CardContent className="space-y-3 p-4">
+              <Label className="flex items-center gap-1.5">
+                <Building2 className="h-3.5 w-3.5 text-primary" />
+                Datos de la empresa
+              </Label>
+              <Textarea
+                placeholder="Qué vendés, tono de marca, políticas (envíos, devoluciones), info clave que el agente debería conocer…"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                rows={5}
+              />
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  Se guarda en el proyecto y se reusa en cada auditoría.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={
+                    updateProject.isPending ||
+                    company === (companyContext ?? "")
+                  }
+                  onClick={() =>
+                    updateProject.mutate(
+                      { id: projectId, companyContext: company },
+                      {
+                        onSuccess: () =>
+                          toast.success("Datos de empresa guardados"),
+                        onError: (e) =>
+                          toast.error(
+                            e instanceof Error
+                              ? e.message
+                              : "No se pudo guardar",
+                          ),
+                      },
+                    )
+                  }
+                >
+                  Guardar datos
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
