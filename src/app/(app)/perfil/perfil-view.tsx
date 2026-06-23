@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { getInitials } from "@/lib/auth/session";
 import { useSessionUser } from "@/lib/auth/use-session";
-import { useDeleteLlmKey, useLlmKey, useSetLlmKey } from "@/lib/queries";
+import { useDeleteLlmKey, useLlmKeys, useSetLlmKey } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
 const SECTIONS = [
@@ -159,8 +159,36 @@ const EXTENSIONS = [
   { name: "Slack", detail: "Alertas en tu canal", connected: false },
 ];
 
-function ApiKeyCard() {
-  const { data: status, isLoading } = useLlmKey();
+const LLM_PROVIDERS = [
+  {
+    key: "anthropic",
+    label: "Anthropic (Claude)",
+    placeholder: "sk-ant-…",
+    hint: "Más confiable para el rubric. Recomendado para la tesis.",
+  },
+  {
+    key: "deepseek",
+    label: "DeepSeek",
+    placeholder: "sk-…",
+    hint: "Más barato. Compatible con OpenAI. (Datos van a DeepSeek.)",
+  },
+];
+
+function ProviderKeyCard({
+  provider,
+  label,
+  placeholder,
+  hint,
+  status,
+  isLoading,
+}: {
+  provider: string;
+  label: string;
+  placeholder: string;
+  hint: string;
+  status?: { configured: boolean; masked: string | null };
+  isLoading: boolean;
+}) {
   const setKey = useSetLlmKey();
   const deleteKey = useDeleteLlmKey();
   const [value, setValue] = React.useState("");
@@ -171,32 +199,26 @@ function ApiKeyCard() {
       toast.error("Pegá una API key válida");
       return;
     }
-    setKey.mutate(key, {
-      onSuccess: () => {
-        toast.success("API key guardada");
-        setValue("");
+    setKey.mutate(
+      { provider, apiKey: key },
+      {
+        onSuccess: () => {
+          toast.success(`API key de ${label} guardada`);
+          setValue("");
+        },
+        onError: (e) =>
+          toast.error(
+            e instanceof Error ? e.message : "No se pudo guardar la key",
+          ),
       },
-      onError: (e) =>
-        toast.error(
-          e instanceof Error ? e.message : "No se pudo guardar la key",
-        ),
-    });
-  }
-
-  function remove() {
-    deleteKey.mutate(undefined, {
-      onSuccess: () => toast.success("API key eliminada"),
-    });
+    );
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">API key — Anthropic</CardTitle>
-        <CardDescription>
-          Necesaria para correr el judge de las auditorías. Se guarda cifrada;
-          nunca se muestra completa.
-        </CardDescription>
+        <CardTitle className="text-base">API key — {label}</CardTitle>
+        <CardDescription>{hint}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         {isLoading ? (
@@ -217,38 +239,54 @@ function ApiKeyCard() {
               size="sm"
               className="text-destructive hover:text-destructive"
               disabled={deleteKey.isPending}
-              onClick={remove}
+              onClick={() =>
+                deleteKey.mutate(provider, {
+                  onSuccess: () => toast.success("API key eliminada"),
+                })
+              }
             >
               Eliminar
             </Button>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Todavía no cargaste una API key. Las auditorías van a fallar hasta
-            que la pongas.
+            Sin cargar. El judge con este motor va a fallar hasta que la pongas.
           </p>
         )}
 
-        <div className="space-y-2">
-          <Label htmlFor="anthropic-key">
-            {status?.configured ? "Reemplazar key" : "Pegá tu API key"}
-          </Label>
-          <div className="flex gap-2">
-            <Input
-              id="anthropic-key"
-              type="password"
-              placeholder="sk-ant-…"
-              autoComplete="off"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-            />
-            <Button onClick={save} disabled={setKey.isPending || !value.trim()}>
-              {setKey.isPending ? "Guardando…" : "Guardar"}
-            </Button>
-          </div>
+        <div className="flex gap-2">
+          <Input
+            type="password"
+            placeholder={placeholder}
+            autoComplete="off"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+          />
+          <Button onClick={save} disabled={setKey.isPending || !value.trim()}>
+            {setKey.isPending ? "Guardando…" : "Guardar"}
+          </Button>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function ApiKeyCard() {
+  const { data: keys = [], isLoading } = useLlmKeys();
+  return (
+    <div className="space-y-4">
+      {LLM_PROVIDERS.map((p) => (
+        <ProviderKeyCard
+          key={p.key}
+          provider={p.key}
+          label={p.label}
+          placeholder={p.placeholder}
+          hint={p.hint}
+          status={keys.find((k) => k.provider === p.key)}
+          isLoading={isLoading}
+        />
+      ))}
+    </div>
   );
 }
 

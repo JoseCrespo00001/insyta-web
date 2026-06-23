@@ -299,6 +299,7 @@ export function useConversation(convId: string | null) {
 export type AuditPayload = {
   name?: string;
   objective?: string;
+  provider?: string;
   flujoId?: string;
   conversationIds: string[];
   emphasis: string[];
@@ -412,27 +413,31 @@ export type LlmKeyStatus = {
   masked: string | null;
 };
 
-export function useLlmKey() {
+// Lista de keys por proveedor (anthropic, deepseek).
+export function useLlmKeys() {
   return useQuery({
-    queryKey: ["llm-key"],
-    queryFn: () => api.get<LlmKeyStatus>("/api/v1/settings/llm-key"),
+    queryKey: ["llm-keys"],
+    queryFn: () => api.get<LlmKeyStatus[]>("/api/v1/settings/llm-keys"),
   });
 }
 
 export function useSetLlmKey() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (apiKey: string) =>
-      api.put<LlmKeyStatus>("/api/v1/settings/llm-key", { apiKey }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["llm-key"] }),
+    mutationFn: (input: { provider: string; apiKey: string }) =>
+      api.put<LlmKeyStatus>(`/api/v1/settings/llm-keys/${input.provider}`, {
+        apiKey: input.apiKey,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["llm-keys"] }),
   });
 }
 
 export function useDeleteLlmKey() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => api.del<LlmKeyStatus>("/api/v1/settings/llm-key"),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["llm-key"] }),
+    mutationFn: (provider: string) =>
+      api.del<LlmKeyStatus>(`/api/v1/settings/llm-keys/${provider}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["llm-keys"] }),
   });
 }
 

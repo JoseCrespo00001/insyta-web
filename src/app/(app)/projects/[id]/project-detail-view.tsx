@@ -154,6 +154,7 @@ export function ProjectDetailView({
   function createAudit(config: {
     name: string;
     objective: string;
+    provider: string;
     flujoId: string;
     conversationIds: string[];
     emphasis: string[];
@@ -169,6 +170,7 @@ export function ProjectDetailView({
       {
         name: config.name,
         objective: config.objective,
+        provider: config.provider,
         flujoId: config.flujoId,
         conversationIds: config.conversationIds,
         emphasis: config.emphasis,

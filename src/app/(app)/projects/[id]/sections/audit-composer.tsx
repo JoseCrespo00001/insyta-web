@@ -59,6 +59,7 @@ export function AuditComposer({
   onRun: (config: {
     name: string;
     objective: string;
+    provider: string;
     flujoId: string;
     conversationIds: string[];
     emphasis: string[];
@@ -67,6 +68,7 @@ export function AuditComposer({
 }) {
   const [name, setName] = React.useState("");
   const [objective, setObjective] = React.useState("");
+  const [provider, setProvider] = React.useState("anthropic");
   const [flujoId, setFlujoId] = React.useState(flujos[0]?.id ?? "");
   const [emphasis, setEmphasis] = React.useState<string[]>([]);
   const [freeText, setFreeText] = React.useState("");
@@ -174,6 +176,7 @@ export function AuditComposer({
             onRun({
               name,
               objective,
+              provider,
               flujoId,
               conversationIds: [...picked],
               emphasis,
@@ -224,6 +227,26 @@ export function AuditComposer({
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   El judge puntúa según si la conversación cumple este objetivo.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Motor del judge</Label>
+                <Select value={provider} onValueChange={setProvider}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="anthropic">
+                      Anthropic (Claude) · recomendado
+                    </SelectItem>
+                    <SelectItem value="deepseek">
+                      DeepSeek · más barato
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Cargá la API key del motor en Perfil → Extensiones.
                 </p>
               </div>
 
