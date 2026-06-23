@@ -5,14 +5,17 @@ import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   ArrowLeft,
+  Check,
   GitBranch,
   Lightbulb,
   Loader2,
+  Pencil,
   Play,
   Sparkles,
   Trash2,
   Users,
   Wrench,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,6 +23,7 @@ import { FlujoPlayground } from "@/app/(app)/improvements/flujo-playground";
 import { FlujoGraph } from "@/app/(app)/projects/[id]/sections/flujo-graph";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatBytes, formatDate } from "@/lib/format";
 import {
@@ -182,6 +186,32 @@ export function FlowDetailView({ flowId }: { flowId: string }) {
     );
   }
 
+  const [editingName, setEditingName] = React.useState(false);
+  const [nameDraft, setNameDraft] = React.useState("");
+
+  function startRename() {
+    setNameDraft(flujo?.name ?? "");
+    setEditingName(true);
+  }
+  function saveRename() {
+    const name = nameDraft.trim();
+    if (!name) {
+      toast.error("El nombre no puede estar vacío");
+      return;
+    }
+    updateFlow.mutate(
+      { id: flowId, name },
+      {
+        onSuccess: () => {
+          toast.success("Nombre actualizado");
+          setEditingName(false);
+        },
+        onError: (err) =>
+          toast.error(`No se pudo renombrar: ${(err as Error).message}`),
+      },
+    );
+  }
+
   function handleDelete() {
     if (!flujo) return;
     if (!window.confirm(`¿Eliminar el flujo "${flujo.name}"?`)) return;
@@ -208,9 +238,55 @@ export function FlowDetailView({ flowId }: { flowId: string }) {
             <ArrowLeft className="h-4 w-4" />
             Volver
           </Button>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {flujo?.name ?? "Flujo"}
-          </h1>
+          {editingName ? (
+            <div className="flex items-center gap-2">
+              <Input
+                autoFocus
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") saveRename();
+                  if (e.key === "Escape") setEditingName(false);
+                }}
+                className="h-9 w-72 text-lg font-semibold"
+              />
+              <Button
+                size="icon"
+                className="h-8 w-8"
+                disabled={updateFlow.isPending}
+                onClick={saveRename}
+                aria-label="Guardar nombre"
+              >
+                <Check className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8"
+                onClick={() => setEditingName(false)}
+                aria-label="Cancelar"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-semibold tracking-tight">
+                {flujo?.name ?? "Flujo"}
+              </h1>
+              {flujo ? (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 text-muted-foreground"
+                  onClick={startRename}
+                  aria-label="Renombrar flujo"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              ) : null}
+            </div>
+          )}
           {flujo ? (
             <p className="text-sm text-muted-foreground">
               v{flujo.version} · {flujo.agentCount} agentes ·{" "}
