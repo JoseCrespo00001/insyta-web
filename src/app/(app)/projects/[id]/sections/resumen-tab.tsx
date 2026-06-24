@@ -18,7 +18,8 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/format";
-import type { Audit, Conversation, Flujo } from "@/lib/projects/types";
+import { useAudit } from "@/lib/queries";
+import type { Audit, Conversation, Flujo, Report } from "@/lib/projects/types";
 
 function Stat({
   label,
@@ -59,6 +60,10 @@ export function ResumenTab({
   const [viewingConv, setViewingConv] = React.useState<Conversation | null>(
     null,
   );
+  // Detalle real (conversaciones + evals); la lista trae el report vacío.
+  const { data: auditDetail } = useAudit(viewing?.id ?? "");
+  const viewingReport = ((auditDetail as { report?: Report } | undefined)
+    ?.report ?? viewing?.report) as Report;
 
   // Vista dedicada: conversación (desde una fallida del reporte).
   if (viewingConv) {
@@ -113,7 +118,7 @@ export function ResumenTab({
           />
         </div>
         <ReportView
-          report={viewing.report}
+          report={viewingReport}
           onSelectConversation={setViewingConv}
         />
       </div>

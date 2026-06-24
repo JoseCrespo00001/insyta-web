@@ -7,6 +7,7 @@ import {
   Cpu,
   Gauge,
   Hash,
+  MessagesSquare,
   Smile,
   Sparkles,
   Tag,
@@ -356,6 +357,55 @@ export function ReportView({
               </div>
             ))}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Todas las conversaciones auditadas (al final, para entrar a cada una) */}
+      <Card className="sm:col-span-2 lg:col-span-4">
+        <CardContent className="space-y-3 p-4">
+          <SectionTitle icon={MessagesSquare}>
+            Conversaciones auditadas · {convs.length}
+          </SectionTitle>
+          {convs.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Sin conversaciones en este reporte.
+            </p>
+          ) : (
+            <div className="space-y-1.5">
+              {convs.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  disabled={!onSelectConversation}
+                  onClick={() => onSelectConversation?.(c)}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-md border p-3 text-left",
+                    onSelectConversation && "transition-colors hover:bg-muted",
+                  )}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">
+                        {c.contactName}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        #{c.externalId}
+                      </span>
+                      {c.resolved === false ? (
+                        <span className="rounded-full bg-score-critical/15 px-2 py-0.5 text-xs font-medium text-score-critical">
+                          no resuelta
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {c.preview}
+                    </p>
+                  </div>
+                  <ScoreBadge score={c.score} />
+                </button>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
