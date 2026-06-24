@@ -28,6 +28,7 @@ import {
   useDeleteConversation,
   useDeleteUpload,
   useUploadCsv,
+  useUploads,
   useUploadStatus,
 } from "@/lib/queries";
 import type {
@@ -121,6 +122,7 @@ export function ConversacionesTab({
   const { data: convDetail } = useConversation(viewingId);
   const deleteConv = useDeleteConversation(projectId);
   const deleteUpload = useDeleteUpload(projectId);
+  const { data: uploadsData } = useUploads(projectId);
 
   function handleDeleteSelected(ids: string[]) {
     if (ids.length === 0) return;
@@ -279,15 +281,20 @@ export function ConversacionesTab({
   const byPinned = (a: Conversation, b: Conversation) =>
     Number(b.pinned) - Number(a.pinned);
   const ACCENTS = ["199 89% 60%", "137 72% 66%", "259 80% 70%", "41 96% 60%"];
+  // Nombre/fecha reales del CSV (del endpoint de uploads), por uploadGroupId.
+  const uploadById = new Map((uploadsData ?? []).map((u) => [u.id, u]));
   const groupIds = [...new Set(conversations.map((c) => c.uploadGroupId))];
   const groups = groupIds
     .map((gid, i) => {
       const all = conversations.filter((c) => c.uploadGroupId === gid);
+      const up = uploadById.get(gid);
       const meta = {
         id: gid,
-        filename: gid === "sin-grupo" ? "Conversaciones" : `CSV ${i + 1}`,
+        filename:
+          up?.filename ??
+          (gid === "sin-grupo" ? "Conversaciones" : `CSV ${i + 1}`),
         accent: ACCENTS[i % ACCENTS.length],
-        loadedAt: new Date().toISOString(),
+        loadedAt: up?.loadedAt ?? new Date().toISOString(),
       };
       return {
         meta,

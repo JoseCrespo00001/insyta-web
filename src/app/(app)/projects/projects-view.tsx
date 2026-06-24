@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { FolderKanban, Plus } from "lucide-react";
+import { FolderKanban, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { ScoreBadge } from "@/components/shared/score-badge";
@@ -27,11 +27,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api";
-import { useCreateProject, useProjects } from "@/lib/queries";
+import { useCreateProject, useDeleteProject, useProjects } from "@/lib/queries";
 
 export function ProjectsView() {
   const { data: projects = [], isLoading } = useProjects();
   const createProject = useCreateProject();
+  const deleteProject = useDeleteProject();
+
+  function handleDeleteProject(id: string, name: string) {
+    if (
+      !window.confirm(
+        `¿Eliminar el proyecto "${name}"? Se borran sus conversaciones, flujos y auditorías. No se puede deshacer.`,
+      )
+    )
+      return;
+    deleteProject.mutate(id, {
+      onSuccess: () => toast.success("Proyecto eliminado"),
+      onError: (e) =>
+        toast.error(e instanceof Error ? e.message : "No se pudo eliminar"),
+    });
+  }
 
   function addProject(name: string) {
     createProject.mutate(
@@ -106,6 +121,18 @@ export function ProjectsView() {
                   >
                     Subir CSV
                   </Link>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="ml-auto text-muted-foreground hover:text-destructive"
+                  disabled={deleteProject.isPending}
+                  onClick={() =>
+                    handleDeleteProject(project.publicId, project.name)
+                  }
+                  aria-label={`Eliminar proyecto ${project.name}`}
+                >
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </CardFooter>
             </Card>
