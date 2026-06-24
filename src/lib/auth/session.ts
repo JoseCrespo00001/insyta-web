@@ -15,6 +15,9 @@ export type SessionUser = {
   orgName: string;
 };
 
+// DEAD-CODE 2026-06-24: STUB_USER ya no se usa — use-session.ts resuelve la sesión real
+// de Supabase ("Replaces the old STUB_USER"). Verificado: 0 referencias de código.
+// Candidato a borrar este export. (getInitials y SessionUser sí se siguen usando.)
 export const STUB_USER: SessionUser = {
   name: "Jose Crespo",
   email: "jose@insyta.io",

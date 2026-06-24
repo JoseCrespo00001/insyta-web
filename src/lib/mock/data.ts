@@ -1,3 +1,5 @@
+// DEAD-CODE 2026-06-24: carpeta src/lib/mock/ sin importadores (audit). Verificado:
+// 0 imports de "@/lib/mock". Candidato a borrar la carpeta — anotado para tu revisión.
 /**
  * Datos mock sembrados de TODO el data model, con IDs y relaciones cruzadas.
  * Fuente de verdad de ejemplo para entender el flujo completo de datos.

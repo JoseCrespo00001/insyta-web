@@ -3,11 +3,11 @@
  *
  * Attaches the Supabase access token as a Bearer JWT so the backend's
  * `get_current_user` + RLS resolve the caller's org/projects. Base URL comes
- * from NEXT_PUBLIC_API_URL (local: http://localhost:8010; prod: Railway).
+ * from NEXT_PUBLIC_API_URL (local: http://localhost:8000; prod: Railway).
  */
 import { createClient } from "@/utils/supabase/client";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8010";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export class ApiError extends Error {
   constructor(

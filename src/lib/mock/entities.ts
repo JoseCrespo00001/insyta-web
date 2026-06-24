@@ -1,3 +1,5 @@
+// DEAD-CODE 2026-06-24: carpeta src/lib/mock/ sin importadores (audit). Verificado:
+// 0 imports de "@/lib/mock". Candidato a borrar la carpeta — anotado para tu revisión.
 /**
  * Tipos de TODAS las entidades del data model (front-facing, camelCase).
  * Espejo de 04-technical/processes/02_data_model.md. Los datos sembrados con

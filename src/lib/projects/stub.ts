@@ -1,3 +1,5 @@
+// DEAD-CODE 2026-06-24: archivo sin importadores (audit). Verificado: 0 imports de
+// "@/lib/projects/stub". Candidato a borrar — se deja anotado para tu revisión.
 import type { Project } from "./types";
 
 /**

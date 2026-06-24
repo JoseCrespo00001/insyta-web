@@ -1,3 +1,5 @@
+// DEAD-CODE 2026-06-24: archivo sin importadores (audit). Verificado: 0 imports de
+// "@/lib/projects/dashboard". Candidato a borrar — se deja anotado para tu revisión.
 /**
  * Datos mock del dashboard (resumen por proyecto + overview + actividad).
  * TODO(api): reemplazar por agregados reales del backend.
