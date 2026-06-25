@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { Check, Code2, Copy, Sparkles } from "lucide-react";
+import { Check, Code2, Copy, GitMerge, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { mergeNodeIntoFlow } from "@/lib/projects/flow-merge";
 
 function CopyButton({ text, label }: { text: string; label: string }) {
   const [done, setDone] = React.useState(false);
@@ -33,12 +34,52 @@ function CopyButton({ text, label }: { text: string; label: string }) {
  * Muestra, debajo de una sugerencia de mejora del flujo, el JSON del nodo a
  * agregar y el prompt para pasarle a la IA constructora — ambos copiables.
  */
+function MergeButton({
+  flowJson,
+  nodeJson,
+}: {
+  flowJson: string;
+  nodeJson: string;
+}) {
+  const [state, setState] = React.useState<"idle" | "done" | "error">("idle");
+  return (
+    <Button
+      type="button"
+      size="sm"
+      className="h-7 gap-1.5 text-xs"
+      onClick={() => {
+        try {
+          const { json } = mergeNodeIntoFlow(flowJson, nodeJson);
+          void navigator.clipboard.writeText(json);
+          setState("done");
+        } catch {
+          setState("error");
+        }
+        window.setTimeout(() => setState("idle"), 1800);
+      }}
+    >
+      {state === "done" ? (
+        <Check className="h-3.5 w-3.5" />
+      ) : (
+        <GitMerge className="h-3.5 w-3.5" />
+      )}
+      {state === "done"
+        ? "Flujo copiado"
+        : state === "error"
+          ? "No se pudo mergear"
+          : "Copiar flujo completo (con el nodo)"}
+    </Button>
+  );
+}
+
 export function SuggestionExtras({
   nodeJson,
   prompt,
+  flowJson,
 }: {
   nodeJson?: string | null;
   prompt?: string | null;
+  flowJson?: string | null; // si viene, habilita el merge al flujo completo
 }) {
   if (!nodeJson && !prompt) return null;
   return (
@@ -67,7 +108,12 @@ export function SuggestionExtras({
             <pre className="max-h-72 overflow-auto rounded bg-muted p-2 font-mono text-[11px] leading-relaxed">
               {nodeJson}
             </pre>
-            <CopyButton text={nodeJson} label="Copiar JSON" />
+            <div className="flex flex-wrap gap-2">
+              <CopyButton text={nodeJson} label="Copiar nodo" />
+              {flowJson ? (
+                <MergeButton flowJson={flowJson} nodeJson={nodeJson} />
+              ) : null}
+            </div>
           </div>
         </details>
       ) : null}

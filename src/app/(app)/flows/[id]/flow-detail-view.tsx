@@ -89,6 +89,7 @@ const LLM_TYPE_ICON: Record<string, typeof Sparkles> = {
 
 function LlmSuggestion({
   s,
+  flowJson,
 }: {
   s: {
     type: string;
@@ -100,6 +101,7 @@ function LlmSuggestion({
     node_json?: string | null;
     prompt?: string | null;
   };
+  flowJson?: string | null;
 }) {
   const Icon = LLM_TYPE_ICON[s.type] ?? Sparkles;
   const crit = s.severity === "critical";
@@ -139,7 +141,11 @@ function LlmSuggestion({
             En: <span className="font-medium">{s.target}</span>
           </p>
         ) : null}
-        <SuggestionExtras nodeJson={s.node_json} prompt={s.prompt} />
+        <SuggestionExtras
+          nodeJson={s.node_json}
+          prompt={s.prompt}
+          flowJson={flowJson}
+        />
       </div>
     </div>
   );
@@ -432,7 +438,7 @@ export function FlowDetailView({ flowId }: { flowId: string }) {
                       ) : null}
                     </div>
                     {flowAudit.data.suggestions.map((s, i) => (
-                      <LlmSuggestion key={i} s={s} />
+                      <LlmSuggestion key={i} s={s} flowJson={flujo?.json} />
                     ))}
                   </div>
                 ) : (
@@ -480,6 +486,7 @@ export function FlowDetailView({ flowId }: { flowId: string }) {
                         <SuggestionExtras
                           nodeJson={imp.nodeJson}
                           prompt={imp.prompt}
+                          flowJson={flujo?.json}
                         />
                       </div>
                     ))}
