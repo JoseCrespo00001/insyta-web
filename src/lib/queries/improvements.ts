@@ -12,6 +12,8 @@ export type ImprovementDto = {
   impact: string;
   why: string;
   status: string;
+  nodeJson?: string | null;
+  prompt?: string | null;
   conversations: Array<{
     id: string;
     externalId: string;

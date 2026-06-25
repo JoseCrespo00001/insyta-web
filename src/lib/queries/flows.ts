@@ -27,6 +27,8 @@ export type FlowAuditResult = {
     target: string;
     severity: string;
     impact: string;
+    node_json?: string | null;
+    prompt?: string | null;
   }>;
 };
 

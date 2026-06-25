@@ -21,6 +21,7 @@ import { toast } from "sonner";
 
 import { FlujoPlayground } from "@/app/(app)/improvements/flujo-playground";
 import { FlujoGraph } from "@/app/(app)/projects/[id]/sections/flujo-graph";
+import { SuggestionExtras } from "@/components/shared/suggestion-extras";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -96,6 +97,8 @@ function LlmSuggestion({
     target: string;
     severity: string;
     impact: string;
+    node_json?: string | null;
+    prompt?: string | null;
   };
 }) {
   const Icon = LLM_TYPE_ICON[s.type] ?? Sparkles;
@@ -136,6 +139,7 @@ function LlmSuggestion({
             En: <span className="font-medium">{s.target}</span>
           </p>
         ) : null}
+        <SuggestionExtras nodeJson={s.node_json} prompt={s.prompt} />
       </div>
     </div>
   );
@@ -473,6 +477,10 @@ export function FlowDetailView({ flowId }: { flowId: string }) {
                         <p className="mt-1 text-sm text-muted-foreground">
                           {imp.detail}
                         </p>
+                        <SuggestionExtras
+                          nodeJson={imp.nodeJson}
+                          prompt={imp.prompt}
+                        />
                       </div>
                     ))}
                   </div>

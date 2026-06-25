@@ -84,6 +84,8 @@ export type Suggestion = {
   title: string;
   detail: string;
   impact: string; // ej: "+12% satisfacción estimada"
+  node_json?: string | null; // snippet JSON del nodo a agregar al flujo
+  prompt?: string | null; // prompt para pasarle a la IA del flujo
 };
 
 /** Un paso de la ejecución del flujo (al probarlo). */

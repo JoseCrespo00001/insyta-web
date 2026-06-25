@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { ScoreBadge } from "@/components/shared/score-badge";
+import { SuggestionExtras } from "@/components/shared/suggestion-extras";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatCurrency, scoreColor } from "@/lib/format";
 import type { Conversation, Report, Satisfaction } from "@/lib/projects/types";
@@ -354,6 +355,7 @@ export function ReportView({
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">{s.detail}</p>
+                <SuggestionExtras nodeJson={s.node_json} prompt={s.prompt} />
               </div>
             ))}
           </div>
