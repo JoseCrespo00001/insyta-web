@@ -44,6 +44,15 @@ type DashboardData = {
       insatisfecho?: number;
     };
   };
+  quality?: {
+    hallucinations: number;
+    flaggedMessages: number;
+    conversationsWithIssues: number;
+    leads: number;
+    unresolved: number;
+    issuesByType: Record<string, number>;
+    topics: Array<{ topic: string; count: number }>;
+  };
   projectSummaries: Array<{
     publicId: string;
     name: string;
@@ -101,8 +110,26 @@ const EMPTY: DashboardData = {
     suggestionsOpen: 0,
     satisfaction: {},
   },
+  quality: {
+    hallucinations: 0,
+    flaggedMessages: 0,
+    conversationsWithIssues: 0,
+    leads: 0,
+    unresolved: 0,
+    issuesByType: {},
+    topics: [],
+  },
   projectSummaries: [],
   recentActivity: [],
+};
+
+const ISSUE_LABELS: Record<string, string> = {
+  alucinacion: "Alucinación",
+  error_politica: "Error de política",
+  alcance: "Fuera de alcance",
+  no_resuelve: "No resuelve",
+  contradiccion: "Contradicción",
+  tono: "Tono",
 };
 
 export default function DashboardPage() {
@@ -145,6 +172,38 @@ export default function DashboardPage() {
   };
   const satTotal = sat.satisfecho + sat.neutral + sat.insatisfecho || 1;
   const totalSuggestions = ov.suggestionsOpen;
+  const q = d.quality ?? EMPTY.quality!;
+  const qualityCards = [
+    {
+      label: "Alucinaciones",
+      value: q.hallucinations,
+      icon: AlertTriangle,
+      intent: q.hallucinations > 0 ? ("bad" as const) : ("neutral" as const),
+      sub: "mensajes con dato inventado",
+    },
+    {
+      label: "Mensajes marcados",
+      value: q.flaggedMessages,
+      icon: MessageSquare,
+      intent: q.flaggedMessages > 0 ? ("warn" as const) : ("neutral" as const),
+      sub: `${q.conversationsWithIssues} conversaciones afectadas`,
+    },
+    {
+      label: "Potenciales clientes",
+      value: q.leads,
+      icon: TrendingUp,
+      intent: "good" as const,
+      sub: "resueltas + satisfechas",
+    },
+    {
+      label: "Sin resolver",
+      value: q.unresolved,
+      icon: TrendingDown,
+      intent: q.unresolved > 0 ? ("bad" as const) : ("neutral" as const),
+      sub: "el agente no cerró",
+    },
+  ];
+  const topIssues = Object.entries(q.issuesByType).sort((a, b) => b[1] - a[1]);
 
   return (
     <div className="space-y-6">
@@ -184,6 +243,92 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      {/* Datos clave de calidad (agregados de los veredictos del judge) */}
+      <section className="space-y-3">
+        <h2 className="flex items-center gap-2 text-sm font-semibold">
+          <Sparkles className="h-4 w-4 text-primary" />
+          Datos clave de calidad
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {qualityCards.map((item) => (
+            <Card key={item.label}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardDescription>{item.label}</CardDescription>
+                <item.icon
+                  className={`h-4 w-4 ${
+                    item.intent === "bad"
+                      ? "text-score-critical"
+                      : item.intent === "warn"
+                        ? "text-score-risk"
+                        : item.intent === "good"
+                          ? "text-score-good"
+                          : "text-muted-foreground"
+                  }`}
+                />
+              </CardHeader>
+              <CardContent className="space-y-1">
+                <p
+                  className={`text-3xl font-bold tracking-tight ${
+                    item.intent === "bad" && item.value > 0
+                      ? "text-score-critical"
+                      : item.intent === "good" && item.value > 0
+                        ? "text-score-good"
+                        : ""
+                  }`}
+                >
+                  {item.value}
+                </p>
+                <p className="text-xs text-muted-foreground">{item.sub}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        {(topIssues.length > 0 || q.topics.length > 0) && (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {topIssues.length > 0 && (
+              <Card>
+                <CardContent className="space-y-2 p-4">
+                  <h3 className="text-sm font-semibold">
+                    Problemas detectados
+                  </h3>
+                  {topIssues.map(([type, count]) => (
+                    <div
+                      key={type}
+                      className="flex items-center justify-between text-sm"
+                    >
+                      <span>{ISSUE_LABELS[type] ?? type}</span>
+                      <span className="font-semibold text-muted-foreground">
+                        {count}
+                      </span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+            {q.topics.length > 0 && (
+              <Card>
+                <CardContent className="space-y-2 p-4">
+                  <h3 className="text-sm font-semibold">
+                    Temas más frecuentes
+                  </h3>
+                  {q.topics.map((t) => (
+                    <div
+                      key={t.topic}
+                      className="flex items-center justify-between text-sm"
+                    >
+                      <span className="truncate">{t.topic}</span>
+                      <span className="font-semibold text-muted-foreground">
+                        {t.count}
+                      </span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+      </section>
 
       {/* Satisfacción global + Requiere atención */}
       <div className="grid gap-4 lg:grid-cols-2">
