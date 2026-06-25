@@ -65,6 +65,10 @@ export type ConversationDetail = {
     role: string;
     content: string;
     timestamp: string;
+    label?: string | null;
+    issue_type?: string | null;
+    severity?: string | null;
+    note?: string | null;
   }[];
   evaluation: ConversationEvaluation | null;
 };

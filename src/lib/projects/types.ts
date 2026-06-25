@@ -32,6 +32,11 @@ export type ChatMessage = {
   role: "user" | "bot";
   content: string;
   at: string; // ISO timestamp del mensaje (viene del CSV)
+  // Veredicto real del judge para este mensaje (si ya se auditó).
+  label?: string | null; // ok | warning | error
+  issueType?: string | null; // alucinacion | error_politica | alcance | ...
+  severity?: string | null;
+  note?: string | null;
 };
 
 /** Reporte de evaluación de una conversación (lo que se midió + trace). */
