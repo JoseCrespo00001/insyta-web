@@ -6,7 +6,9 @@ import {
   AlertTriangle,
   ArrowLeft,
   Check,
+  Copy,
   GitBranch,
+  History,
   Lightbulb,
   Loader2,
   Pencil,
@@ -14,6 +16,7 @@ import {
   Sparkles,
   Trash2,
   Users,
+  Wand2,
   Wrench,
   X,
 } from "lucide-react";
@@ -202,6 +205,36 @@ export function FlowDetailView({ flowId }: { flowId: string }) {
     if (flujo?.json) setDraft(flujo.json);
   }, [flujo?.json]);
 
+  // Validez del JSON en vivo (para el editor): null = válido, string = error.
+  const jsonError = React.useMemo<string | null>(() => {
+    if (!draft.trim()) return "Vacío";
+    try {
+      JSON.parse(draft);
+      return null;
+    } catch (e) {
+      return e instanceof Error ? e.message : "JSON inválido";
+    }
+  }, [draft]);
+  const jsonValid = jsonError === null;
+  const jsonDirty = flujo ? draft !== flujo.json : false;
+  const jsonLines = draft ? draft.split("\n").length : 0;
+  const [jsonCopied, setJsonCopied] = React.useState(false);
+
+  function formatJson() {
+    try {
+      setDraft(JSON.stringify(JSON.parse(draft), null, 2));
+      toast.success("JSON formateado");
+    } catch {
+      toast.error("No se puede formatear: el JSON no es válido");
+    }
+  }
+
+  function copyJson() {
+    void navigator.clipboard.writeText(draft);
+    setJsonCopied(true);
+    window.setTimeout(() => setJsonCopied(false), 1500);
+  }
+
   const analysis = React.useMemo(
     () => analyzeFlow(flujo?.json ?? ""),
     [flujo?.json],
@@ -376,33 +409,94 @@ export function FlowDetailView({ flowId }: { flowId: string }) {
                 <TabsList>
                   <TabsTrigger value="grafo">Grafo</TabsTrigger>
                   <TabsTrigger value="json">JSON</TabsTrigger>
+                  <TabsTrigger value="historial" className="gap-1.5">
+                    <History className="h-3.5 w-3.5" />
+                    Historial
+                  </TabsTrigger>
                 </TabsList>
                 <TabsContent value="grafo">
                   <FlujoGraph flujo={flujo} />
                 </TabsContent>
-                <TabsContent value="json" className="space-y-3">
+                <TabsContent value="json" className="space-y-2">
+                  {/* Barra de herramientas del editor */}
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-xs">
+                      {jsonValid ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-score-good/15 px-2 py-0.5 font-medium text-score-good">
+                          <Check className="h-3.5 w-3.5" />
+                          JSON válido
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-score-critical/15 px-2 py-0.5 font-medium text-score-critical">
+                          <AlertTriangle className="h-3.5 w-3.5" />
+                          JSON inválido
+                        </span>
+                      )}
+                      <span className="text-muted-foreground">
+                        {jsonLines} líneas · {formatBytes(draft.length)}
+                        {jsonDirty ? " · sin guardar" : ""}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 gap-1.5 text-xs"
+                        onClick={copyJson}
+                      >
+                        {jsonCopied ? (
+                          <Check className="h-3.5 w-3.5 text-score-good" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                        {jsonCopied ? "Copiado" : "Copiar"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 gap-1.5 text-xs"
+                        onClick={formatJson}
+                        disabled={!jsonValid}
+                      >
+                        <Wand2 className="h-3.5 w-3.5" />
+                        Formatear
+                      </Button>
+                    </div>
+                  </div>
                   <textarea
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     spellCheck={false}
-                    className="min-h-[78vh] w-full resize-y rounded-md border bg-muted p-4 font-mono text-xs leading-relaxed"
+                    className={cn(
+                      "min-h-[72vh] w-full resize-y rounded-md border bg-muted p-4 font-mono text-xs leading-relaxed focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                      !jsonValid && "border-score-critical/50",
+                    )}
                   />
+                  {!jsonValid && draft.trim() ? (
+                    <p className="text-xs text-score-critical">{jsonError}</p>
+                  ) : null}
                   <div className="flex justify-end gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setDraft(flujo.json ?? "")}
+                      disabled={!jsonDirty}
                     >
                       Revertir
                     </Button>
                     <Button
                       size="sm"
                       onClick={saveJson}
-                      disabled={updateFlow.isPending || draft === flujo.json}
+                      disabled={
+                        updateFlow.isPending || !jsonDirty || !jsonValid
+                      }
                     >
                       {updateFlow.isPending ? "Guardando…" : "Guardar JSON"}
                     </Button>
                   </div>
+                </TabsContent>
+                <TabsContent value="historial">
+                  <FlowVersionHistory flowId={flowId} embedded />
                 </TabsContent>
               </Tabs>
             </CardContent>
@@ -508,9 +602,14 @@ export function FlowDetailView({ flowId }: { flowId: string }) {
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-primary" />
                   <h3 className="text-sm font-semibold">
-                    Mejoras de auditorías · {improvements.length}
+                    Mejoras que se pueden agregar · {improvements.length}
                   </h3>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Cambios al flujo sugeridos por las auditorías. Aplicá uno y se
+                  guarda como una versión nueva (la podés revertir desde el
+                  Historial).
+                </p>
                 {improvements.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
                     Todavía no hay mejoras. Corré una auditoría sobre las
@@ -518,34 +617,65 @@ export function FlowDetailView({ flowId }: { flowId: string }) {
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    {improvements.map((imp) => (
-                      <div key={imp.id} className="rounded-lg border p-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium">{imp.title}</p>
-                          <span className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
-                            {imp.impact}
-                          </span>
+                    {improvements.map((imp) => {
+                      const applicable = Boolean(imp.nodeJson || imp.prompt);
+                      return (
+                        <div
+                          key={imp.id}
+                          className={cn(
+                            "rounded-lg border p-3",
+                            imp.status === "applied" &&
+                              "border-score-good/30 bg-score-good/5",
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-sm font-medium">{imp.title}</p>
+                            <div className="flex shrink-0 items-center gap-1.5">
+                              {imp.status === "applied" ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-score-good/15 px-2 py-0.5 text-xs font-medium text-score-good">
+                                  <Check className="h-3 w-3" />
+                                  Aplicada
+                                </span>
+                              ) : (
+                                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                                  Pendiente
+                                </span>
+                              )}
+                              {imp.impact ? (
+                                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+                                  {imp.impact}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {imp.detail}
+                          </p>
+                          {applicable ? (
+                            <SuggestionExtras
+                              nodeJson={imp.nodeJson}
+                              prompt={imp.prompt}
+                              flowJson={flujo?.json}
+                              onApply={(merged) =>
+                                applyImprovement(imp, merged)
+                              }
+                              applying={applyingId === imp.id}
+                              applied={imp.status === "applied"}
+                            />
+                          ) : (
+                            <p className="mt-2 rounded-md border border-dashed bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                              Esta mejora es de una auditoría vieja y no trae el
+                              cambio listo para aplicar. Corré una auditoría
+                              nueva para generar el JSON del nodo + el prompt.
+                            </p>
+                          )}
                         </div>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {imp.detail}
-                        </p>
-                        <SuggestionExtras
-                          nodeJson={imp.nodeJson}
-                          prompt={imp.prompt}
-                          flowJson={flujo?.json}
-                          onApply={(merged) => applyImprovement(imp, merged)}
-                          applying={applyingId === imp.id}
-                          applied={imp.status === "applied"}
-                        />
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
             </Card>
-
-            {/* Historial de versiones del flujo */}
-            <FlowVersionHistory flowId={flowId} />
           </div>
         </div>
       )}

@@ -1,14 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  Check,
-  Copy,
-  History,
-  Loader2,
-  Pencil,
-  RotateCcw,
-} from "lucide-react";
+import { Check, Copy, History, Loader2, Pencil, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -73,13 +66,7 @@ function VersionJson({
   );
 }
 
-function VersionRow({
-  flowId,
-  v,
-}: {
-  flowId: string;
-  v: FlowVersionSummary;
-}) {
+function VersionRow({ flowId, v }: { flowId: string; v: FlowVersionSummary }) {
   const restore = useRestoreFlowVersion(flowId);
   const rename = useRenameFlowVersion(flowId);
   const [editing, setEditing] = React.useState(false);
@@ -209,31 +196,47 @@ function VersionRow({
   );
 }
 
-export function FlowVersionHistory({ flowId }: { flowId: string }) {
+export function FlowVersionHistory({
+  flowId,
+  embedded = false,
+}: {
+  flowId: string;
+  // embedded=true: sin Card propia (vive dentro de otra card, ej. una tab).
+  embedded?: boolean;
+}) {
   const { data: versions = [], isLoading } = useFlowVersions(flowId);
+  const body = (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <History className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold">
+          Historial de versiones · {versions.length}
+        </h3>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Cada cambio del flujo (mejora aplicada, edición manual o restaurar)
+        queda guardado acá. La versión activa es la que usa el flujo; podés
+        volver a cualquiera.
+      </p>
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground">Cargando historial…</p>
+      ) : versions.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Todavía no hay versiones guardadas.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {versions.map((v) => (
+            <VersionRow key={v.id} flowId={flowId} v={v} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+  if (embedded) return body;
   return (
     <Card>
-      <CardContent className="space-y-3 p-4">
-        <div className="flex items-center gap-2">
-          <History className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold">
-            Historial de versiones · {versions.length}
-          </h3>
-        </div>
-        {isLoading ? (
-          <p className="text-sm text-muted-foreground">Cargando historial…</p>
-        ) : versions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Todavía no hay versiones guardadas.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {versions.map((v) => (
-              <VersionRow key={v.id} flowId={flowId} v={v} />
-            ))}
-          </div>
-        )}
-      </CardContent>
+      <CardContent className="p-4">{body}</CardContent>
     </Card>
   );
 }
