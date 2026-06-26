@@ -79,14 +79,86 @@ export function useDeleteFlow(_projectId?: string) {
 export function useUpdateFlow(_projectId?: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: string; flowJson?: unknown; name?: string }) =>
+    mutationFn: (input: {
+      id: string;
+      flowJson?: unknown;
+      name?: string;
+      versionLabel?: string;
+      versionSource?: "improvement" | "manual" | "upload";
+    }) =>
       api.put<Flujo>(`/api/v1/flows/${input.id}`, {
         name: input.name,
         flowJson: input.flowJson,
+        versionLabel: input.versionLabel,
+        versionSource: input.versionSource,
       }),
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ["flows"] });
       qc.invalidateQueries({ queryKey: ["flow", vars.id] });
+      qc.invalidateQueries({ queryKey: ["flow-versions", vars.id] });
     },
+  });
+}
+
+// ── Historial de versiones del flujo ────────────────────────────────────────
+export type FlowVersionSummary = {
+  id: string;
+  versionNumber: number;
+  label: string;
+  source: string; // initial | improvement | manual | restore | upload
+  sizeBytes: number;
+  agentCount: number;
+  createdAt: string;
+  isCurrent: boolean;
+};
+
+export type FlowVersionDetail = FlowVersionSummary & { json: string };
+
+export function useFlowVersions(flowId: string) {
+  return useQuery({
+    queryKey: ["flow-versions", flowId],
+    queryFn: () =>
+      api.get<FlowVersionSummary[]>(`/api/v1/flows/${flowId}/versions`),
+    enabled: !!flowId,
+  });
+}
+
+export function useFlowVersion(flowId: string, versionId: string | null) {
+  return useQuery({
+    queryKey: ["flow-version", flowId, versionId],
+    queryFn: () =>
+      api.get<FlowVersionDetail>(
+        `/api/v1/flows/${flowId}/versions/${versionId}`,
+      ),
+    enabled: !!flowId && !!versionId,
+  });
+}
+
+export function useRestoreFlowVersion(flowId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (versionId: string) =>
+      api.post<Flujo>(
+        `/api/v1/flows/${flowId}/versions/${versionId}/restore`,
+        {},
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["flow", flowId] });
+      qc.invalidateQueries({ queryKey: ["flow-versions", flowId] });
+      qc.invalidateQueries({ queryKey: ["flows"] });
+    },
+  });
+}
+
+export function useRenameFlowVersion(flowId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { versionId: string; label: string }) =>
+      api.patch<FlowVersionSummary>(
+        `/api/v1/flows/${flowId}/versions/${input.versionId}`,
+        { label: input.label },
+      ),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["flow-versions", flowId] }),
   });
 }

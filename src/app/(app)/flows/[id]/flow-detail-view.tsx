@@ -21,6 +21,7 @@ import { toast } from "sonner";
 
 import { FlujoPlayground } from "@/app/(app)/improvements/flujo-playground";
 import { FlujoGraph } from "@/app/(app)/projects/[id]/sections/flujo-graph";
+import { FlowVersionHistory } from "./flow-version-history";
 import { SuggestionExtras } from "@/components/shared/suggestion-extras";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,11 +34,13 @@ import {
   type FlowSuggestionKind,
 } from "@/lib/projects/flow-analysis";
 import {
+  type ImprovementDto,
   useAuditFlow,
   useDeleteFlow,
   useFlow,
   useFlowImprovements,
   useUpdateFlow,
+  useUpdateImprovement,
 } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
@@ -157,7 +160,42 @@ export function FlowDetailView({ flowId }: { flowId: string }) {
   const updateFlow = useUpdateFlow();
   const deleteFlow = useDeleteFlow();
   const { data: improvements = [] } = useFlowImprovements(flowId);
+  const updateImprovement = useUpdateImprovement();
   const flowAudit = useAuditFlow(flowId);
+  const [applyingId, setApplyingId] = React.useState<string | null>(null);
+
+  // Aplica una mejora: el nodo ya viene mergeado en el JSON completo del flujo
+  // (lo arma SuggestionExtras). Lo guardamos como una versión nueva y marcamos
+  // la mejora como aplicada.
+  function applyImprovement(imp: ImprovementDto, mergedFlowJson: string) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(mergedFlowJson);
+    } catch {
+      toast.error("No se pudo aplicar: el JSON resultante no es válido");
+      return;
+    }
+    setApplyingId(imp.id);
+    updateFlow.mutate(
+      {
+        id: flowId,
+        flowJson: parsed,
+        versionLabel: `Mejora: ${imp.title}`,
+        versionSource: "improvement",
+      },
+      {
+        onSuccess: () => {
+          updateImprovement.mutate({ id: imp.id, status: "applied" });
+          toast.success("Mejora aplicada — nueva versión guardada");
+          setApplyingId(null);
+        },
+        onError: (err) => {
+          toast.error(`No se pudo aplicar: ${(err as Error).message}`);
+          setApplyingId(null);
+        },
+      },
+    );
+  }
 
   const [draft, setDraft] = React.useState("");
   React.useEffect(() => {
@@ -187,9 +225,14 @@ export function FlowDetailView({ flowId }: { flowId: string }) {
       return;
     }
     updateFlow.mutate(
-      { id: flowId, flowJson: parsed },
       {
-        onSuccess: () => toast.success("Flujo actualizado"),
+        id: flowId,
+        flowJson: parsed,
+        versionLabel: "Cambio manual en el JSON",
+        versionSource: "manual",
+      },
+      {
+        onSuccess: () => toast.success("Flujo actualizado — versión guardada"),
         onError: (err) =>
           toast.error(`No se pudo guardar: ${(err as Error).message}`),
       },
@@ -487,6 +530,9 @@ export function FlowDetailView({ flowId }: { flowId: string }) {
                           nodeJson={imp.nodeJson}
                           prompt={imp.prompt}
                           flowJson={flujo?.json}
+                          onApply={(merged) => applyImprovement(imp, merged)}
+                          applying={applyingId === imp.id}
+                          applied={imp.status === "applied"}
                         />
                       </div>
                     ))}
@@ -494,6 +540,9 @@ export function FlowDetailView({ flowId }: { flowId: string }) {
                 )}
               </CardContent>
             </Card>
+
+            {/* Historial de versiones del flujo */}
+            <FlowVersionHistory flowId={flowId} />
           </div>
         </div>
       )}
