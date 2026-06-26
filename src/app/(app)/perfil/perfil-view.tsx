@@ -199,16 +199,18 @@ function ProviderKeyCard({
       toast.error("Pegá una API key válida");
       return;
     }
+    const toastId = toast.loading(`Guardando API key de ${label}…`);
     setKey.mutate(
       { provider, apiKey: key },
       {
         onSuccess: () => {
-          toast.success(`API key de ${label} guardada`);
+          toast.success(`API key de ${label} guardada`, { id: toastId });
           setValue("");
         },
         onError: (e) =>
           toast.error(
             e instanceof Error ? e.message : "No se pudo guardar la key",
+            { id: toastId },
           ),
       },
     );
@@ -239,11 +241,22 @@ function ProviderKeyCard({
               size="sm"
               className="text-destructive hover:text-destructive"
               disabled={deleteKey.isPending}
-              onClick={() =>
+              onClick={() => {
+                const toastId = toast.loading(
+                  `Eliminando API key de ${label}…`,
+                );
                 deleteKey.mutate(provider, {
-                  onSuccess: () => toast.success("API key eliminada"),
-                })
-              }
+                  onSuccess: () =>
+                    toast.success("API key eliminada", { id: toastId }),
+                  onError: (e) =>
+                    toast.error(
+                      e instanceof Error
+                        ? e.message
+                        : "No se pudo eliminar la key",
+                      { id: toastId },
+                    ),
+                });
+              }}
             >
               Eliminar
             </Button>

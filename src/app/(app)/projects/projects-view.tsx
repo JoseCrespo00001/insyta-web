@@ -41,23 +41,30 @@ export function ProjectsView() {
       )
     )
       return;
+    const toastId = toast.loading(`Eliminando proyecto "${name}"…`);
     deleteProject.mutate(id, {
-      onSuccess: () => toast.success("Proyecto eliminado"),
+      onSuccess: () =>
+        toast.success(`Proyecto "${name}" eliminado`, { id: toastId }),
       onError: (e) =>
-        toast.error(e instanceof Error ? e.message : "No se pudo eliminar"),
+        toast.error(e instanceof Error ? e.message : "No se pudo eliminar", {
+          id: toastId,
+        }),
     });
   }
 
   function addProject(name: string) {
+    const toastId = toast.loading(`Creando proyecto "${name}"…`);
     createProject.mutate(
       { name },
       {
-        onSuccess: () => toast.success(`Proyecto "${name}" creado`),
+        onSuccess: () =>
+          toast.success(`Proyecto "${name}" creado`, { id: toastId }),
         onError: (err) =>
           toast.error(
             err instanceof ApiError && err.status === 401
               ? "Iniciá sesión para crear proyectos"
               : `No se pudo crear el proyecto: ${(err as Error).message}`,
+            { id: toastId },
           ),
       },
     );

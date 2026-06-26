@@ -144,10 +144,13 @@ export function ProjectDetailView({
 
   function deleteConversation(id: string) {
     setConversations((prev) => prev.filter((c) => c.id !== id)); // optimista
+    const toastId = toast.loading("Eliminando conversación…");
     deleteConvMut.mutate(id, {
-      onSuccess: () => toast.success("Conversación eliminada"),
+      onSuccess: () => toast.success("Conversación eliminada", { id: toastId }),
       onError: (e) =>
-        toast.error(e instanceof Error ? e.message : "No se pudo eliminar"),
+        toast.error(e instanceof Error ? e.message : "No se pudo eliminar", {
+          id: toastId,
+        }),
     });
   }
 
@@ -166,6 +169,9 @@ export function ProjectDetailView({
     }
     // POST real -> el backend crea la auditoría en "running" y encola el judge
     // (run_audit). La lista (useAudits) hace polling y refleja el resultado.
+    const toastId = toast.loading(
+      `Creando auditoría sobre ${config.conversationIds.length} conversaciones…`,
+    );
     createAuditMut.mutate(
       {
         name: config.name,
@@ -180,6 +186,7 @@ export function ProjectDetailView({
         onSuccess: () => {
           toast.success(
             `Auditoría en curso sobre ${config.conversationIds.length} conversaciones`,
+            { id: toastId },
           );
           setComposing(null);
           setTab("auditorias");
@@ -187,6 +194,7 @@ export function ProjectDetailView({
         onError: (e) =>
           toast.error(
             e instanceof Error ? e.message : "No se pudo crear la auditoría",
+            { id: toastId },
           ),
       },
     );

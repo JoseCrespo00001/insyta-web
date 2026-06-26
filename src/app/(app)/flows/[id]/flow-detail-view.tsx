@@ -268,13 +268,16 @@ export function FlowDetailView({ flowId }: { flowId: string }) {
   function handleDelete() {
     if (!flujo) return;
     if (!window.confirm(`¿Eliminar el flujo "${flujo.name}"?`)) return;
+    const toastId = toast.loading(`Eliminando flujo "${flujo.name}"…`);
     deleteFlow.mutate(flowId, {
       onSuccess: () => {
-        toast.success("Flujo eliminado");
+        toast.success(`Flujo "${flujo.name}" eliminado`, { id: toastId });
         router.back();
       },
       onError: (err) =>
-        toast.error(`No se pudo eliminar: ${(err as Error).message}`),
+        toast.error(`No se pudo eliminar: ${(err as Error).message}`, {
+          id: toastId,
+        }),
     });
   }
 

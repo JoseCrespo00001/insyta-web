@@ -127,20 +127,31 @@ export function ConversacionesTab({
   function handleDeleteSelected(ids: string[]) {
     if (ids.length === 0) return;
     if (!window.confirm(`¿Eliminar ${ids.length} conversación(es)?`)) return;
+    const toastId = toast.loading(`Eliminando ${ids.length} conversación(es)…`);
     Promise.all(ids.map((id) => deleteConv.mutateAsync(id)))
-      .then(() => toast.success(`${ids.length} conversación(es) eliminada(s)`))
+      .then(() =>
+        toast.success(`${ids.length} conversación(es) eliminada(s)`, {
+          id: toastId,
+        }),
+      )
       .catch((e) =>
-        toast.error(e instanceof Error ? e.message : "No se pudo eliminar"),
+        toast.error(e instanceof Error ? e.message : "No se pudo eliminar", {
+          id: toastId,
+        }),
       );
   }
 
   function handleDeleteCsv(uploadId: string, filename: string) {
     if (!window.confirm(`¿Eliminar el CSV "${filename}" y sus conversaciones?`))
       return;
+    const toastId = toast.loading(`Eliminando CSV "${filename}"…`);
     deleteUpload.mutate(uploadId, {
-      onSuccess: () => toast.success("CSV eliminado"),
+      onSuccess: () =>
+        toast.success(`CSV "${filename}" eliminado`, { id: toastId }),
       onError: (e) =>
-        toast.error(e instanceof Error ? e.message : "No se pudo eliminar"),
+        toast.error(e instanceof Error ? e.message : "No se pudo eliminar", {
+          id: toastId,
+        }),
     });
   }
 
@@ -149,18 +160,26 @@ export function ConversacionesTab({
   const [uploadId, setUploadId] = React.useState<string | null>(null);
   const [uploadName, setUploadName] = React.useState("");
   const { data: status } = useUploadStatus(uploadId);
+  // Un único toast que vive desde la subida hasta que termina el procesamiento.
+  const uploadToastRef = React.useRef<string | number | null>(null);
 
   React.useEffect(() => {
     if (!status) return;
     if (status.status === "completed") {
       toast.success(
         `CSV procesado: ${status.rows_processed ?? 0} conversaciones`,
+        uploadToastRef.current ? { id: uploadToastRef.current } : undefined,
       );
+      uploadToastRef.current = null;
       qc.invalidateQueries({ queryKey: ["conversations", projectId] });
       qc.invalidateQueries({ queryKey: ["uploads", projectId] });
       setUploadId(null);
     } else if (status.status === "failed") {
-      toast.error(`La carga falló: ${status.error_message ?? "error"}`);
+      toast.error(
+        `La carga falló: ${status.error_message ?? "error"}`,
+        uploadToastRef.current ? { id: uploadToastRef.current } : undefined,
+      );
+      uploadToastRef.current = null;
       setUploadId(null);
     }
   }, [status, qc, projectId]);
@@ -173,17 +192,23 @@ export function ConversacionesTab({
     event.target.value = "";
     if (!file) return;
     setUploadName(file.name);
+    uploadToastRef.current = toast.loading(`Subiendo CSV "${file.name}"…`);
     uploadCsv.mutate(file, {
       onSuccess: (res) => {
         setUploadId(res.upload_id);
-        toast.info("Procesando CSV en el backend…");
+        toast.loading("Procesando CSV en el backend…", {
+          id: uploadToastRef.current ?? undefined,
+        });
       },
-      onError: (err) =>
+      onError: (err) => {
         toast.error(
           err instanceof ApiError && err.status === 401
             ? "Iniciá sesión para subir conversaciones"
             : `No se pudo subir el CSV: ${(err as Error).message}`,
-        ),
+          uploadToastRef.current ? { id: uploadToastRef.current } : undefined,
+        );
+        uploadToastRef.current = null;
+      },
     });
   }
 
