@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/format";
-import { useAudit } from "@/lib/queries";
+import { useAudit, useFlow } from "@/lib/queries";
 import type { Audit, Conversation, Report } from "@/lib/projects/types";
 
 export function AuditoriasTab({
@@ -37,6 +37,11 @@ export function AuditoriasTab({
   const viewingReport: Report = ((
     auditDetail as { report?: Report } | undefined
   )?.report ?? viewing?.report) as Report;
+  // Flujo auditado: su JSON habilita "Copiar flujo completo (con el nodo)".
+  const { data: viewingFlow } = useFlow(
+    viewing?.flujoId ?? "",
+    Boolean(viewing?.flujoId),
+  );
 
   // Vista dedicada: conversación (desde una fallida del reporte).
   if (viewingConv) {
@@ -102,6 +107,7 @@ export function AuditoriasTab({
           <ReportView
             report={viewingReport}
             onSelectConversation={setViewingConv}
+            flowJson={viewingFlow?.json}
           />
         ) : (
           <p className="text-sm text-muted-foreground">Cargando reporte…</p>

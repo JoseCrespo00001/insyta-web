@@ -81,9 +81,12 @@ function SectionTitle({
 export function ReportView({
   report,
   onSelectConversation,
+  flowJson,
 }: {
   report: Report;
   onSelectConversation?: (conversation: Conversation) => void;
+  // JSON del flujo auditado: habilita "Copiar flujo completo (con el nodo)".
+  flowJson?: string | null;
 }) {
   const convs = report.conversations;
   const n = report.total || convs.length || 1;
@@ -355,7 +358,11 @@ export function ReportView({
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">{s.detail}</p>
-                <SuggestionExtras nodeJson={s.node_json} prompt={s.prompt} />
+                <SuggestionExtras
+                  nodeJson={s.node_json}
+                  prompt={s.prompt}
+                  flowJson={flowJson}
+                />
               </div>
             ))}
           </div>

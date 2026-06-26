@@ -18,7 +18,7 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/format";
-import { useAudit } from "@/lib/queries";
+import { useAudit, useFlow } from "@/lib/queries";
 import type { Audit, Conversation, Flujo, Report } from "@/lib/projects/types";
 
 function Stat({
@@ -64,6 +64,11 @@ export function ResumenTab({
   const { data: auditDetail } = useAudit(viewing?.id ?? "");
   const viewingReport = ((auditDetail as { report?: Report } | undefined)
     ?.report ?? viewing?.report) as Report;
+  // Flujo auditado: su JSON habilita "Copiar flujo completo (con el nodo)".
+  const { data: viewingFlow } = useFlow(
+    viewing?.flujoId ?? "",
+    Boolean(viewing?.flujoId),
+  );
 
   // Vista dedicada: conversación (desde una fallida del reporte).
   if (viewingConv) {
@@ -120,6 +125,7 @@ export function ResumenTab({
         <ReportView
           report={viewingReport}
           onSelectConversation={setViewingConv}
+          flowJson={viewingFlow?.json}
         />
       </div>
     );
