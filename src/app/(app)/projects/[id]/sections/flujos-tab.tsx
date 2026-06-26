@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Eye, Trash2, Upload, Workflow } from "lucide-react";
+import { Eye, Loader2, Trash2, Upload, Workflow } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -42,31 +42,44 @@ export function FlujosTab({
       return;
     }
     const parsed = flowJson as { name?: string; last_tested_version?: string };
+    const flowName = parsed.name || file.name.replace(/\.json$/i, "");
+    const toastId = toast.loading(`Subiendo flujo "${flowName}"…`);
     createFlow.mutate(
       {
-        name: parsed.name || file.name.replace(/\.json$/i, ""),
+        name: flowName,
         version: parsed.last_tested_version || "1.0",
         flowJson,
       },
       {
         onSuccess: (f) =>
-          toast.success(`Flujo "${f.name}" subido (${f.agentCount} agentes)`),
+          toast.success(`Flujo "${f.name}" subido (${f.agentCount} agentes)`, {
+            id: toastId,
+          }),
         onError: (err) =>
           toast.error(
             err instanceof ApiError && err.status === 401
               ? "Iniciá sesión para subir flujos"
               : `No se pudo subir el flujo: ${(err as Error).message}`,
+            { id: toastId },
           ),
       },
     );
   }
 
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
+
   function handleDelete(flujo: Flujo) {
     if (!window.confirm(`¿Eliminar el flujo "${flujo.name}"?`)) return;
+    const toastId = toast.loading(`Eliminando flujo "${flujo.name}"…`);
+    setDeletingId(flujo.id);
     deleteFlow.mutate(flujo.id, {
-      onSuccess: () => toast.success("Flujo eliminado"),
+      onSuccess: () =>
+        toast.success(`Flujo "${flujo.name}" eliminado`, { id: toastId }),
       onError: (err) =>
-        toast.error(`No se pudo eliminar: ${(err as Error).message}`),
+        toast.error(`No se pudo eliminar: ${(err as Error).message}`, {
+          id: toastId,
+        }),
+      onSettled: () => setDeletingId(null),
     });
   }
 
@@ -77,9 +90,16 @@ export function FlujosTab({
           Un flujo es el JSON completo del agente (los agentes y cómo
           responden). Subí varios para testearlos y mejorarlos.
         </p>
-        <Button onClick={() => fileRef.current?.click()}>
-          <Upload className="h-4 w-4" />
-          Subir flujo
+        <Button
+          onClick={() => fileRef.current?.click()}
+          disabled={createFlow.isPending}
+        >
+          {createFlow.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Upload className="h-4 w-4" />
+          )}
+          {createFlow.isPending ? "Subiendo…" : "Subir flujo"}
         </Button>
         <input
           ref={fileRef}
@@ -130,9 +150,14 @@ export function FlujosTab({
                   size="sm"
                   className="text-muted-foreground hover:text-destructive"
                   onClick={() => handleDelete(flujo)}
+                  disabled={deletingId === flujo.id}
                 >
-                  <Trash2 className="h-4 w-4" />
-                  Eliminar
+                  {deletingId === flujo.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  {deletingId === flujo.id ? "Eliminando…" : "Eliminar"}
                 </Button>
               </CardFooter>
             </Card>
