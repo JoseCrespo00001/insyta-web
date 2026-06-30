@@ -27,6 +27,22 @@ export default function LoginPage() {
   const [password, setPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
 
+  // Surface auth errors bounced back by /auth/callback (OAuth denied, etc.).
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const authError = params.get("error");
+    if (authError) {
+      toast.error(authError);
+      params.delete("error");
+      const qs = params.toString();
+      window.history.replaceState(
+        {},
+        "",
+        `${window.location.pathname}${qs ? `?${qs}` : ""}`,
+      );
+    }
+  }, []);
+
   // Ensure an org+user exist for the freshly-authenticated Supabase user.
   async function bootstrapAndGo() {
     try {
@@ -70,7 +86,9 @@ export default function LoginPage() {
   async function handleOAuth(provider: "google" | "github") {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: `${window.location.origin}/dashboard` },
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+      },
     });
     if (error) toast.error(error.message);
   }
