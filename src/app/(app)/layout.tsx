@@ -7,10 +7,12 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen w-full max-w-full flex-col overflow-x-hidden bg-background">
       <BootstrapGate />
       <TopNav />
-      <main className="flex-1 px-4 py-6 md:px-6 lg:px-8">{children}</main>
+      <main className="w-full min-w-0 max-w-full flex-1 overflow-x-hidden px-4 py-6 md:px-6 lg:px-8">
+        {children}
+      </main>
     </div>
   );
 }
