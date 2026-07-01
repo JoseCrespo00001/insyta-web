@@ -68,21 +68,6 @@ export default function LoginPage() {
     await bootstrapAndGo();
   }
 
-  async function handleSignup() {
-    setLoading(true);
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    if (data.session) {
-      await bootstrapAndGo();
-    } else {
-      toast.success("Revisá tu email para confirmar la cuenta.");
-    }
-  }
-
   async function handleOAuth(provider: "google" | "github") {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
@@ -166,14 +151,9 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-muted-foreground">
           ¿No tenés cuenta?{" "}
-          <button
-            type="button"
-            onClick={handleSignup}
-            className="text-primary hover:underline"
-            disabled={loading}
-          >
+          <Link href="/register" className="text-primary hover:underline">
             Crear cuenta
-          </button>
+          </Link>
         </p>
       </CardContent>
     </Card>
