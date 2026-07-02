@@ -20,7 +20,7 @@ export type SessionUser = {
 // Candidato a borrar este export. (getInitials y SessionUser sí se siguen usando.)
 export const STUB_USER: SessionUser = {
   name: "Jose Crespo",
-  email: "jose@insyta.io",
+  email: "jose@insyta.space",
   orgName: "Insyta Demo",
 };
 
