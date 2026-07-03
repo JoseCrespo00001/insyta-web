@@ -90,7 +90,9 @@ export function AuditComposer({
   const [query, setQuery] = React.useState("");
 
   const selectedCount = picked.size;
-  const canRun = Boolean(flujoId) && selectedCount > 0;
+  // El flujo es OPCIONAL: se puede auditar solo con conversaciones + la data de la
+  // empresa (supervisor/knowledge). Con conversaciones seleccionadas alcanza.
+  const canRun = selectedCount > 0;
 
   function toggleEmphasis(key: string) {
     setEmphasis((prev) =>
@@ -272,10 +274,11 @@ export function AuditComposer({
               </div>
 
               <div className="space-y-2">
-                <Label>Flujo a auditar</Label>
+                <Label>Flujo a auditar (opcional)</Label>
                 {flujos.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No hay flujos cargados. Subí uno en la pestaña Flujos.
+                    Sin flujo: se audita solo con las conversaciones y la data
+                    de la empresa. Podés subir un flujo en la pestaña Flujos.
                   </p>
                 ) : (
                   <Select value={flujoId} onValueChange={setFlujoId}>
