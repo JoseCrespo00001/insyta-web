@@ -6,6 +6,7 @@
 export * from "./me";
 export * from "./projects";
 export * from "./flows";
+export * from "./supervisors";
 export * from "./uploads";
 export * from "./conversations";
 export * from "./audits";
