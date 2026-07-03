@@ -108,6 +108,7 @@ export function AuditoriasTab({
             report={viewingReport}
             onSelectConversation={setViewingConv}
             flowJson={viewingFlow?.json}
+            auditId={viewing?.id}
           />
         ) : (
           <p className="text-sm text-muted-foreground">Cargando reporte…</p>

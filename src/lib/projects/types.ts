@@ -58,6 +58,41 @@ export type ConversationEvaluation = {
   phoenixTraceId: string;
   phoenixSpanId: string;
   evaluatedAt: string;
+  // Rúbrica (AUD-7.x). Opcionales: el backend siempre los manda, pero los mocks no.
+  scoreBruto?: number | null;
+  scoreFinal?: number | null;
+  confidence?: number | null;
+  hasVeto?: boolean;
+  vetoFlags?: string[];
+  segment?: ConversationSegment | null;
+  sentimentTrajectory?: string[];
+  requiereRevisionHumana?: boolean;
+  rubric?: Rubric | null;
+};
+
+export type ConversationSegment =
+  | "cliente_ideal"
+  | "satisfecho"
+  | "neutral"
+  | "insatisfecho"
+  | "potencial_lead"
+  | "problematico";
+
+export type RubricDimension = {
+  id: string; // A1..F4
+  score: number | null; // 1-5
+  turn_id: number | null;
+  justificacion: string;
+};
+
+export type Rubric = {
+  dimensiones: RubricDimension[];
+  veto_flags: string[];
+  confidence: number;
+  sentimiento_trayectoria: string[];
+  fraude_flags: string[];
+  resumen: string;
+  requiere_revision_humana: boolean;
 };
 
 export type Conversation = {
