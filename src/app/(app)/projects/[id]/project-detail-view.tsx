@@ -159,6 +159,7 @@ export function ProjectDetailView({
     objective: string;
     provider: string;
     flujoId: string;
+    supervisorId: string;
     conversationIds: string[];
     emphasis: string[];
     freeText: string;
@@ -178,6 +179,7 @@ export function ProjectDetailView({
         objective: config.objective,
         provider: config.provider,
         flujoId: config.flujoId,
+        supervisorId: config.supervisorId || undefined,
         conversationIds: config.conversationIds,
         emphasis: config.emphasis,
         freeText: config.freeText,
@@ -245,7 +247,6 @@ export function ProjectDetailView({
           conversations={conversations}
           initialSelectedIds={composing}
           projectId={projectId}
-          companyContext={project?.companyContext ?? null}
           onCancel={() => setComposing(null)}
           onRun={createAudit}
         />

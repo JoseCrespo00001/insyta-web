@@ -10,6 +10,7 @@ export type AuditPayload = {
   objective?: string;
   provider?: string;
   flujoId?: string;
+  supervisorId?: string;
   conversationIds: string[];
   emphasis: string[];
   freeText: string;
