@@ -123,18 +123,23 @@ export function SupervisorManager() {
   }
 
   async function handleFiles(files: FileList | null) {
-    if (!files) return;
+    if (!files || files.length === 0) return;
     const next = { ...form.attachedData };
+    const added: string[] = [];
     for (const file of Array.from(files)) {
       try {
         const text = await file.text();
         const key = file.name.replace(/\.[^.]+$/, "").toLowerCase();
         next[key] = JSON.parse(text);
+        added.push(key);
       } catch {
         toast.error(`No pude parsear ${file.name} (¿es JSON válido?)`);
       }
     }
-    setForm((f) => ({ ...f, attachedData: next }));
+    if (added.length > 0) {
+      setForm((f) => ({ ...f, attachedData: next }));
+      toast.success(`Data adjunta cargada: ${added.join(", ")}`);
+    }
     if (fileRef.current) fileRef.current.value = "";
   }
 
@@ -218,6 +223,15 @@ export function SupervisorManager() {
         </div>
       </div>
 
+      {!loadingProjects && (projects ?? []).length === 0 && (
+        <Card>
+          <CardContent className="p-5 text-sm text-muted-foreground">
+            No tenés proyectos todavía. Creá uno en la sección{" "}
+            <strong>Proyectos</strong> para poder armar un supervisor.
+          </CardContent>
+        </Card>
+      )}
+
       {open && (
         <Card>
           <CardContent className="space-y-5 p-6">
@@ -298,9 +312,9 @@ export function SupervisorManager() {
                 <input
                   ref={fileRef}
                   type="file"
-                  accept=".json"
+                  accept="application/json,.json"
                   multiple
-                  hidden
+                  className="hidden"
                   onChange={(e) => handleFiles(e.target.files)}
                 />
               </div>
