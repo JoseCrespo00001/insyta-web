@@ -122,6 +122,52 @@ export function ConversationReport({
         )}
       </div>
 
+      {e.rubric && e.rubric.dimensiones.length > 0 ? (
+        <section className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <h4 className="text-sm font-semibold">Rúbrica</h4>
+            {e.segment ? (
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium">
+                {e.segment.replace(/_/g, " ")}
+              </span>
+            ) : null}
+            {e.hasVeto ? (
+              <span className="rounded-full bg-score-critical/15 px-2 py-0.5 text-xs font-medium text-score-critical">
+                VETO: {(e.vetoFlags ?? []).join(", ")}
+              </span>
+            ) : null}
+            {typeof e.confidence === "number" ? (
+              <span className="text-xs text-muted-foreground">
+                confianza {Math.round(e.confidence * 100)}%
+              </span>
+            ) : null}
+            {e.requiereRevisionHumana ? (
+              <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-600">
+                revisión humana
+              </span>
+            ) : null}
+          </div>
+          <div className="space-y-1.5">
+            {e.rubric.dimensiones.map((d) => (
+              <div key={d.id} className="rounded-md border p-2.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">{d.id}</span>
+                  <span className="text-muted-foreground">
+                    {d.score != null ? `${d.score}/5` : "—"}
+                    {d.turn_id != null ? ` · turno ${d.turn_id}` : ""}
+                  </span>
+                </div>
+                {d.justificacion ? (
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {d.justificacion}
+                  </p>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {!evaluated ? null : (
         <>
           {/* Dimensiones medidas */}
