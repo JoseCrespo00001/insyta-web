@@ -1,3 +1,4 @@
+import * as React from "react";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -5,22 +6,41 @@ import {
   Clock,
   Coins,
   Cpu,
+  Download,
   Gauge,
   Hash,
   MessagesSquare,
+  ShieldAlert,
   Smile,
   Sparkles,
   Tag,
   XCircle,
   Zap,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { ScoreBadge } from "@/components/shared/score-badge";
 import { SuggestionExtras } from "@/components/shared/suggestion-extras";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { downloadAuditServerCsv } from "@/lib/projects/export";
 import { formatCurrency, scoreColor } from "@/lib/format";
-import type { Conversation, Report, Satisfaction } from "@/lib/projects/types";
+import type {
+  Conversation,
+  ConversationSegment,
+  Report,
+  Satisfaction,
+} from "@/lib/projects/types";
 import { cn } from "@/lib/utils";
+
+const SEGMENT_LABELS: Record<ConversationSegment, string> = {
+  cliente_ideal: "Cliente ideal",
+  satisfecho: "Satisfecho",
+  neutral: "Neutral",
+  insatisfecho: "Insatisfecho",
+  potencial_lead: "Potencial lead",
+  problematico: "Problemático",
+};
 
 const SAT_META: Record<Satisfaction, { label: string; bar: string }> = {
   satisfecho: { label: "Satisfecho", bar: "bg-score-good" },
@@ -82,13 +102,43 @@ export function ReportView({
   report,
   onSelectConversation,
   flowJson,
+  auditId,
 }: {
   report: Report;
   onSelectConversation?: (conversation: Conversation) => void;
   // JSON del flujo auditado: habilita "Copiar flujo completo (con el nodo)".
   flowJson?: string | null;
+  // id de la auditoría: habilita el export CSV del servidor por segmento.
+  auditId?: string;
 }) {
   const convs = report.conversations;
+  const [segmentFilter, setSegmentFilter] =
+    React.useState<ConversationSegment | null>(null);
+  const [downloading, setDownloading] = React.useState(false);
+
+  // Segmentos presentes en el reporte (para los chips).
+  const presentSegments = Array.from(
+    new Set(
+      convs
+        .map((c) => c.evaluation.segment)
+        .filter((s): s is ConversationSegment => !!s),
+    ),
+  );
+  const filteredConvs = segmentFilter
+    ? convs.filter((c) => c.evaluation.segment === segmentFilter)
+    : convs;
+
+  async function handleCsv() {
+    if (!auditId) return;
+    setDownloading(true);
+    try {
+      await downloadAuditServerCsv(auditId, segmentFilter);
+    } catch {
+      toast.error("No se pudo exportar el CSV");
+    } finally {
+      setDownloading(false);
+    }
+  }
   const n = report.total || convs.length || 1;
   const pct = (x: number) => Math.round((x / n) * 100);
 
@@ -372,16 +422,69 @@ export function ReportView({
       {/* Todas las conversaciones auditadas (al final, para entrar a cada una) */}
       <Card className="sm:col-span-2 lg:col-span-4">
         <CardContent className="space-y-3 p-4">
-          <SectionTitle icon={MessagesSquare}>
-            Conversaciones auditadas · {convs.length}
-          </SectionTitle>
-          {convs.length === 0 ? (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <SectionTitle icon={MessagesSquare}>
+              Conversaciones auditadas · {filteredConvs.length}
+            </SectionTitle>
+            {auditId ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCsv}
+                disabled={downloading}
+              >
+                <Download className="mr-1 h-4 w-4" />
+                {segmentFilter
+                  ? `CSV · ${SEGMENT_LABELS[segmentFilter]}`
+                  : "Descargar CSV"}
+              </Button>
+            ) : null}
+          </div>
+
+          {presentSegments.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => setSegmentFilter(null)}
+                className={cn(
+                  "rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+                  !segmentFilter
+                    ? "border-primary bg-primary/15 text-foreground"
+                    : "border-border text-muted-foreground hover:bg-muted",
+                )}
+              >
+                Todas ({convs.length})
+              </button>
+              {presentSegments.map((seg) => {
+                const count = convs.filter(
+                  (c) => c.evaluation.segment === seg,
+                ).length;
+                return (
+                  <button
+                    key={seg}
+                    type="button"
+                    onClick={() => setSegmentFilter(seg)}
+                    className={cn(
+                      "rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+                      segmentFilter === seg
+                        ? "border-primary bg-primary/15 text-foreground"
+                        : "border-border text-muted-foreground hover:bg-muted",
+                    )}
+                  >
+                    {SEGMENT_LABELS[seg]} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {filteredConvs.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Sin conversaciones en este reporte.
+              Sin conversaciones en este segmento.
             </p>
           ) : (
             <div className="space-y-1.5">
-              {convs.map((c) => (
+              {filteredConvs.map((c) => (
                 <button
                   key={c.id}
                   type="button"
@@ -403,6 +506,16 @@ export function ReportView({
                       {c.resolved === false ? (
                         <span className="rounded-full bg-score-critical/15 px-2 py-0.5 text-xs font-medium text-score-critical">
                           no resuelta
+                        </span>
+                      ) : null}
+                      {c.evaluation.segment ? (
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-foreground">
+                          {SEGMENT_LABELS[c.evaluation.segment]}
+                        </span>
+                      ) : null}
+                      {c.evaluation.hasVeto ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-score-critical/15 px-2 py-0.5 text-xs font-medium text-score-critical">
+                          <ShieldAlert className="h-3 w-3" /> VETO
                         </span>
                       ) : null}
                     </div>

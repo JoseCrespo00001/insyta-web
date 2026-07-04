@@ -1,14 +1,12 @@
 import * as React from "react";
 import {
   ArrowLeft,
-  Building2,
+  BrainCircuit,
   Play,
   Target,
-  Upload,
   Workflow,
   X,
 } from "lucide-react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { EMPHASIS_OPTIONS } from "@/lib/projects/mock";
-import { useUpdateProject } from "@/lib/queries";
+import { useSupervisors } from "@/lib/queries";
 import type { Conversation, Flujo } from "@/lib/projects/types";
 import { cn } from "@/lib/utils";
 
@@ -46,7 +44,6 @@ export function AuditComposer({
   conversations,
   initialSelectedIds,
   projectId,
-  companyContext,
   onCancel,
   onRun,
 }: {
@@ -54,50 +51,48 @@ export function AuditComposer({
   conversations: Conversation[];
   initialSelectedIds: string[];
   projectId: string;
-  companyContext: string | null;
   onCancel: () => void;
   onRun: (config: {
     name: string;
     objective: string;
     provider: string;
     flujoId: string;
+    supervisorId: string;
     conversationIds: string[];
     emphasis: string[];
     freeText: string;
   }) => void;
 }) {
+  const { data: supervisors } = useSupervisors(projectId);
   const [name, setName] = React.useState("");
   const [objective, setObjective] = React.useState("");
   const [provider, setProvider] = React.useState("anthropic");
   const [flujoId, setFlujoId] = React.useState(flujos[0]?.id ?? "");
+  const [supervisorId, setSupervisorId] = React.useState("");
   const [emphasis, setEmphasis] = React.useState<string[]>([]);
   const [freeText, setFreeText] = React.useState("");
-  const [company, setCompany] = React.useState(companyContext ?? "");
-  const updateProject = useUpdateProject();
-  const docRef = React.useRef<HTMLInputElement>(null);
 
-  async function handleDoc(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = "";
-    if (/\.(pdf|docx?|xlsx?)$/i.test(file.name)) {
-      toast.error(
-        "Por ahora solo texto (.txt, .md, .csv). PDF/Word: próximamente.",
-      );
-      return;
-    }
-    const text = (await file.text()).trim();
-    if (!text) return;
-    setCompany((prev) => (prev ? `${prev}\n\n${text}` : text));
-    toast.success(`Documento "${file.name}" cargado al texto`);
+  // Al elegir un supervisor, autocompleta flujo + defaults (objetivo/énfasis/free text).
+  // Los datos de la empresa y la fuente de verdad viven en el supervisor, no acá.
+  function applySupervisor(id: string) {
+    setSupervisorId(id);
+    const sup = (supervisors ?? []).find((s) => s.id === id);
+    if (!sup) return;
+    if (sup.flujoId) setFlujoId(sup.flujoId);
+    if (sup.defaultObjective) setObjective(sup.defaultObjective);
+    if (sup.defaultEmphasis?.length) setEmphasis(sup.defaultEmphasis);
+    if (sup.defaultFreeText) setFreeText(sup.defaultFreeText);
   }
+
   const [picked, setPicked] = React.useState<Set<string>>(
     () => new Set(initialSelectedIds),
   );
   const [query, setQuery] = React.useState("");
 
   const selectedCount = picked.size;
-  const canRun = Boolean(flujoId) && selectedCount > 0;
+  // El flujo es OPCIONAL: se puede auditar solo con conversaciones + la data de la
+  // empresa (supervisor/knowledge). Con conversaciones seleccionadas alcanza.
+  const canRun = selectedCount > 0;
 
   function toggleEmphasis(key: string) {
     setEmphasis((prev) =>
@@ -178,6 +173,7 @@ export function AuditComposer({
               objective,
               provider,
               flujoId,
+              supervisorId,
               conversationIds: [...picked],
               emphasis,
               freeText,
@@ -195,6 +191,33 @@ export function AuditComposer({
         <div className="space-y-4">
           <Card>
             <CardContent className="space-y-4 p-4">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <BrainCircuit className="h-3.5 w-3.5 text-primary" />
+                  Supervisor
+                </Label>
+                <Select
+                  value={supervisorId || "none"}
+                  onValueChange={(v) => applySupervisor(v === "none" ? "" : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Elegí un supervisor (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin supervisor</SelectItem>
+                    {(supervisors ?? []).map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Trae el flujo, los datos de la empresa y la fuente de verdad
+                  (precios/info). Se gestiona en la sección Supervisor.
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="audit-name">Nombre de la auditoría</Label>
                 <Input
@@ -251,10 +274,11 @@ export function AuditComposer({
               </div>
 
               <div className="space-y-2">
-                <Label>Flujo a auditar</Label>
+                <Label>Flujo a auditar (opcional)</Label>
                 {flujos.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No hay flujos cargados. Subí uno en la pestaña Flujos.
+                    Sin flujo: se audita solo con las conversaciones y la data
+                    de la empresa. Podés subir un flujo en la pestaña Flujos.
                   </p>
                 ) : (
                   <Select value={flujoId} onValueChange={setFlujoId}>
@@ -328,63 +352,8 @@ export function AuditComposer({
             </CardContent>
           </Card>
 
-          {/* Datos de la empresa — se guardan en el proyecto y los reusa el judge */}
-          <Card>
-            <CardContent className="space-y-3 p-4">
-              <Label className="flex items-center gap-1.5">
-                <Building2 className="h-3.5 w-3.5 text-primary" />
-                Datos de la empresa
-              </Label>
-              <Textarea
-                placeholder="Qué vendés, tono de marca, políticas (envíos, devoluciones), info clave que el agente debería conocer…"
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                rows={5}
-              />
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => docRef.current?.click()}
-                >
-                  <Upload className="h-4 w-4" />
-                  Subir documento
-                </Button>
-                <input
-                  ref={docRef}
-                  type="file"
-                  accept=".txt,.md,.csv,.json,text/*"
-                  className="hidden"
-                  onChange={handleDoc}
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={
-                    updateProject.isPending ||
-                    company === (companyContext ?? "")
-                  }
-                  onClick={() =>
-                    updateProject.mutate(
-                      { id: projectId, companyContext: company },
-                      {
-                        onSuccess: () =>
-                          toast.success("Datos de empresa guardados"),
-                        onError: (e) =>
-                          toast.error(
-                            e instanceof Error
-                              ? e.message
-                              : "No se pudo guardar",
-                          ),
-                      },
-                    )
-                  }
-                >
-                  Guardar datos
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {/* AUD-1.6: la card "Datos de la empresa" se movió al Supervisor
+              (knowledge base + attached_data). Se elige un Supervisor arriba. */}
         </div>
 
         {/* Derecha: conversaciones a auditar */}
