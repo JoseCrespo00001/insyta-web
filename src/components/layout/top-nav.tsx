@@ -35,10 +35,10 @@ import { useSessionUser } from "@/lib/auth/use-session";
 import { formatDateTime } from "@/lib/format";
 import { createClient } from "@/utils/supabase/client";
 import {
-  NOTIFICATIONS,
-  UNREAD_COUNT,
   type NotifKind,
-} from "@/lib/notifications";
+  useMarkNotificationsRead,
+  useNotifications,
+} from "@/lib/queries/notifications";
 import { cn } from "@/lib/utils";
 
 const NOTIF_ICON: Record<NotifKind, typeof Bell> = {
@@ -65,6 +65,10 @@ export function TopNav() {
   const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
   const user = useSessionUser();
+  const { data: notifData } = useNotifications();
+  const markRead = useMarkNotificationsRead();
+  const notifications = notifData?.items ?? [];
+  const unread = notifData?.unreadCount ?? 0;
 
   async function handleLogout() {
     await createClient().auth.signOut();
@@ -124,7 +128,12 @@ export function TopNav() {
         className={cn("ml-auto flex shrink-0 items-center gap-1 p-1", island)}
       >
         {/* Notificaciones */}
-        <DropdownMenu>
+        <DropdownMenu
+          onOpenChange={(open) => {
+            // Al abrir la campana, marcar como leídas (limpia el contador).
+            if (open && unread > 0) markRead.mutate();
+          }}
+        >
           <DropdownMenuTrigger asChild>
             <button
               type="button"
@@ -132,7 +141,7 @@ export function TopNav() {
               aria-label="Notificaciones"
             >
               <Bell className="h-4 w-4" />
-              {UNREAD_COUNT > 0 ? (
+              {unread > 0 ? (
                 <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive" />
               ) : null}
             </button>
@@ -143,38 +152,58 @@ export function TopNav() {
           >
             <DropdownMenuLabel className="flex items-center justify-between">
               Notificaciones
-              {UNREAD_COUNT > 0 ? (
+              {unread > 0 ? (
                 <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium">
-                  {UNREAD_COUNT} nuevas
+                  {unread} nuevas
                 </span>
               ) : null}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {NOTIFICATIONS.map((n) => {
-              const Icon = NOTIF_ICON[n.kind];
-              return (
-                <DropdownMenuItem
-                  key={n.id}
-                  className="flex items-start gap-3 py-2.5"
-                >
-                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted">
-                    <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
-                  <div className="min-w-0 space-y-0.5">
-                    <p className="flex items-center gap-1.5 text-sm font-medium">
-                      {n.title}
-                      {!n.read ? (
-                        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+            {notifications.length === 0 ? (
+              <p className="px-2 py-6 text-center text-sm text-muted-foreground">
+                No tenés notificaciones todavía.
+              </p>
+            ) : (
+              notifications.map((n) => {
+                const Icon = NOTIF_ICON[n.kind];
+                const body = (
+                  <>
+                    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted">
+                      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0 space-y-0.5">
+                      <p className="flex items-center gap-1.5 text-sm font-medium">
+                        {n.title}
+                        {!n.read ? (
+                          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                        ) : null}
+                      </p>
+                      {n.detail ? (
+                        <p className="text-xs text-muted-foreground">
+                          {n.detail}
+                        </p>
                       ) : null}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{n.detail}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {formatDateTime(n.at)}
-                    </p>
-                  </div>
-                </DropdownMenuItem>
-              );
-            })}
+                      <p className="text-[11px] text-muted-foreground">
+                        {formatDateTime(n.at)}
+                      </p>
+                    </div>
+                  </>
+                );
+                return (
+                  <DropdownMenuItem
+                    key={n.id}
+                    className="flex items-start gap-3 py-2.5"
+                    asChild={!!n.link}
+                  >
+                    {n.link ? (
+                      <Link href={n.link}>{body}</Link>
+                    ) : (
+                      <div>{body}</div>
+                    )}
+                  </DropdownMenuItem>
+                );
+              })
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
 
