@@ -28,9 +28,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { getInitials } from "@/lib/auth/session";
@@ -131,7 +128,7 @@ export function TopNav() {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="relative hidden h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:flex"
+              className="relative flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               aria-label="Notificaciones"
             >
               <Bell className="h-4 w-4" />
@@ -140,7 +137,10 @@ export function TopNav() {
               ) : null}
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
+          <DropdownMenuContent
+            align="end"
+            className="max-h-[70vh] w-[min(20rem,calc(100vw-1.5rem))] overflow-y-auto"
+          >
             <DropdownMenuLabel className="flex items-center justify-between">
               Notificaciones
               {UNREAD_COUNT > 0 ? (
@@ -222,46 +222,6 @@ export function TopNav() {
               <Moon className="hidden h-4 w-4 dark:block" />
               Cambiar tema
             </DropdownMenuItem>
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="sm:hidden">
-                <Bell className="h-4 w-4" />
-                Notificaciones
-                {UNREAD_COUNT > 0 ? (
-                  <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium">
-                    {UNREAD_COUNT}
-                  </span>
-                ) : null}
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="w-72">
-                {NOTIFICATIONS.map((n) => {
-                  const Icon = NOTIF_ICON[n.kind];
-                  return (
-                    <DropdownMenuItem
-                      key={n.id}
-                      className="flex items-start gap-3 py-2.5"
-                    >
-                      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted">
-                        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                      </div>
-                      <div className="min-w-0 space-y-0.5">
-                        <p className="flex items-center gap-1.5 text-sm font-medium">
-                          {n.title}
-                          {!n.read ? (
-                            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                          ) : null}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {n.detail}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {formatDateTime(n.at)}
-                        </p>
-                      </div>
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
             <DropdownMenuSeparator className="sm:hidden" />
             <DropdownMenuItem asChild>
               <Link href="/perfil">
