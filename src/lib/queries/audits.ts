@@ -35,6 +35,17 @@ export type AuditDto = {
     total: number;
     satisfaction: Record<string, number>;
     avgScore?: number | null;
+    adversarial?: {
+      total: number;
+      repelled: number;
+      ceded: number;
+      byType: Record<string, number>;
+    } | null;
+    resolution?: {
+      resolved: number;
+      legitimate: number;
+      pct: number | null;
+    } | null;
     failing: unknown[];
     conversations: unknown[];
     suggestions: unknown[];

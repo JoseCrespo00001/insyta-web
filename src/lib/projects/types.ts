@@ -227,6 +227,7 @@ export type Report = {
   avgScore?: number | null; // B1: score promedio VISIBLE (topeado por VETO) — fuente back
   satisfaction: Record<Satisfaction, number>;
   risk?: AuditRisk; // capa de riesgo agregada
+  adversarial?: AdversarialStats; // ataques (repelidos/cedidos) — la lista lo trae top-level
   resolution?: ResolutionStats | null; // A4: denominador = legítimas — fuente back
   escalations?: EscalationStats | null; // A5: correctas vs evitables — fuente back
   failing: Conversation[]; // conversaciones donde el agente no resolvió
