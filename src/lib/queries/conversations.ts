@@ -6,13 +6,27 @@ import { api } from "@/lib/api";
 import type { ConversationEvaluation } from "@/lib/projects/types";
 
 // ── Conversations ─────────────────────────────────────────────────────────
+// Trae TODAS las conversaciones del proyecto recorriendo la cursor-pagination
+// (el endpoint pagina de a 50 por default; el composer necesita verlas todas
+// para seleccionar cuáles auditar). Devuelve el mismo shape { items, next_cursor }.
 export function useConversations(projectId: string) {
   return useQuery({
     queryKey: ["conversations", projectId],
-    queryFn: () =>
-      api.get<{ items: unknown[]; next_cursor: string | null }>(
-        `/api/v1/projects/${projectId}/conversations`,
-      ),
+    queryFn: async () => {
+      const all: unknown[] = [];
+      let cursor: string | null = null;
+      do {
+        const qs = new URLSearchParams({ limit: "200" });
+        if (cursor) qs.set("cursor", cursor);
+        const page = await api.get<{
+          items: unknown[];
+          next_cursor: string | null;
+        }>(`/api/v1/projects/${projectId}/conversations?${qs.toString()}`);
+        all.push(...page.items);
+        cursor = page.next_cursor;
+      } while (cursor);
+      return { items: all, next_cursor: null as string | null };
+    },
     enabled: !!projectId,
   });
 }
