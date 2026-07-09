@@ -6,9 +6,11 @@ import { api } from "@/lib/api";
 
 // Perfil por cliente final del agente (no el usuario logueado): reputación
 // (respetuoso/etiqueta), recurrencia, temas y a qué hora responde.
+// B5: identificamos al cliente por `userKey` (hash) y mostramos `display`
+// (nombre o pseudónimo). Nunca el teléfono/identificador crudo (PII).
 export type ClientSummary = {
-  externalId: string;
-  contactName: string | null;
+  userKey: string;
+  display: string;
   conversations: number;
   avgScore: number | null;
   avgSatisfaction: number | null;
@@ -20,9 +22,8 @@ export type ClientSummary = {
 };
 
 export type ClientProfile = {
-  externalId: string;
-  contactName: string | null;
-  contactPhone: string | null;
+  userKey: string;
+  display: string;
   conversations: number;
   avgScore: number | null;
   avgSatisfaction: number | null;
@@ -46,15 +47,16 @@ export function useClients(projectId: string) {
   });
 }
 
-export function useClient(projectId: string, externalId: string | null) {
+export function useClient(projectId: string, userKey: string | null) {
   return useQuery({
-    queryKey: ["client", projectId, externalId],
+    queryKey: ["client", projectId, userKey],
     queryFn: () =>
+      // B5: se pide por user_key (hash), no por teléfono crudo en la URL.
       api.get<ClientProfile>(
         `/api/v1/projects/${projectId}/clients/profile?client=${encodeURIComponent(
-          externalId ?? "",
+          userKey ?? "",
         )}`,
       ),
-    enabled: !!projectId && !!externalId,
+    enabled: !!projectId && !!userKey,
   });
 }

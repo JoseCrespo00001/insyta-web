@@ -63,6 +63,7 @@ export type ConversationEvaluation = {
   scoreFinal?: number | null;
   confidence?: number | null;
   hasVeto?: boolean;
+  vetoFirm?: boolean; // B7: firme (topea) vs tentativo ("a confirmar", no topea)
   vetoFlags?: string[];
   segment?: ConversationSegment | null;
   sentimentTrajectory?: string[];
@@ -116,7 +117,11 @@ export type Conversation = {
   messages: ChatMessage[]; // transcript para ver el chat
   messageEvaluations?: MessageVerdict[]; // verdicts por mensaje (riesgo)
   needsIntervention?: boolean; // el backend ya lo computó
+  reason?: string | null; // B3: motivo de intervención en lenguaje humano (backend)
   riskScore?: number; // para ordenar por urgencia
+  isDuplicate?: boolean; // B4: duplicado de determinismo (visible, no cuenta en agregados)
+  // B5: externalId y contactName vienen ya pseudonimizados desde el backend
+  // (externalId = "cliente #<hash>", contactName = nombre o el mismo pseudónimo).
   score: number | null;
   satisfaction: Satisfaction | null;
   resolved: boolean | null; // false = el agente no resolvió
@@ -177,6 +182,7 @@ export type AuditRisk = {
 /** Resultado de una auditoría. */
 export type Report = {
   total: number;
+  avgScore?: number | null; // B1: score promedio VISIBLE (topeado por VETO) — fuente back
   satisfaction: Record<Satisfaction, number>;
   risk?: AuditRisk; // capa de riesgo agregada
   failing: Conversation[]; // conversaciones donde el agente no resolvió
