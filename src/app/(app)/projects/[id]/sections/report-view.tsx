@@ -118,6 +118,44 @@ function VetoChip({ firm }: { firm: boolean }) {
   );
 }
 
+const ATTACK_LABELS: Record<string, string> = {
+  jailbreak: "Jailbreak",
+  prompt_injection: "Inyección de prompt",
+  manipulacion_legal: "Manipulación legal",
+  manipulacion_precio: "Manipulación de precio",
+  otro: "Ataque",
+};
+
+/**
+ * Chip de veredicto adversarial (Prompt 3/4): en conversaciones de ataque
+ * reemplaza al KPI Satisfecho/Insatisfecho. Repelido = el agente resistió (verde);
+ * Cedido = el agente cayó (rojo). El input más peligroso no es el cliente más feliz.
+ */
+function AttackChip({
+  type,
+  repelled,
+}: {
+  type?: string | null;
+  repelled?: boolean | null;
+}) {
+  const label = ATTACK_LABELS[type ?? "otro"] ?? "Ataque";
+  const cls = repelled
+    ? "bg-score-good/15 text-score-good"
+    : "bg-score-critical/15 text-score-critical";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
+        cls,
+      )}
+      title={`${repelled ? "Ataque repelido" : "Ataque cedido"} · ${label}`}
+    >
+      <ShieldAlert className="h-3 w-3" />
+      {repelled ? "Ataque repelido" : "Ataque cedido"} · {label}
+    </span>
+  );
+}
+
 export function ReportView({
   report,
   onSelectConversation,
@@ -174,13 +212,52 @@ export function ReportView({
             scored.reduce((a, c) => a + (c.score as number), 0) / scored.length,
           )
         : null;
-  const resolved = convs.filter((c) => c.evaluation.resolution).length;
-  const escalated = convs.filter((c) => c.evaluation.escalated).length;
+  // Eje adversarial (Prompt 3/4): los ataques NO cuentan como satisfacción ni
+  // resolución; se miden aparte (repelidos vs cedidos). Preferimos las cifras
+  // server-authoritative (report.resolution / report.escalations / risk.adversarial).
+  const legitConvs = convs.filter((c) => !c.evaluation.isAdversarial);
+  const attackConvs = convs.filter((c) => c.evaluation.isAdversarial);
+  const adv = report.risk?.adversarial;
+  const attacksTotal = adv?.total ?? attackConvs.length;
+  const attacksRepelled =
+    adv?.repelled ??
+    attackConvs.filter((c) => c.evaluation.attackRepelled).length;
+  const attacksCeded = adv?.ceded ?? attackConvs.length - attacksRepelled;
+
+  // A4: resolución server-authoritative; denominador = conversaciones legítimas.
+  const resolvedCount =
+    report.resolution?.resolved ??
+    legitConvs.filter((c) => c.evaluation.resolution).length;
+  const resolutionDenom = report.resolution?.legitimate ?? legitConvs.length;
+  const resolutionPct =
+    report.resolution?.pct ??
+    (resolutionDenom
+      ? Math.round((resolvedCount / resolutionDenom) * 100)
+      : null);
+
+  // A5: escaladas correctas (ante ataque / fuera de scope) vs evitables.
+  const escalatedCorrect =
+    report.escalations?.correct ??
+    convs.filter(
+      (c) =>
+        c.evaluation.escalated &&
+        (c.evaluation.isAdversarial || c.evaluation.scopeViolation),
+    ).length;
+  const escalatedAvoidable =
+    report.escalations?.avoidable ??
+    convs.filter(
+      (c) =>
+        c.evaluation.escalated &&
+        !c.evaluation.isAdversarial &&
+        !c.evaluation.scopeViolation,
+    ).length;
   const frustration = convs.filter((c) => c.evaluation.frustration).length;
   const scopeViol = convs.filter((c) => c.evaluation.scopeViolation).length;
   const toneNeg = convs.filter((c) => c.evaluation.tone === "negative").length;
-  const avgSat = convs.length
-    ? convs.reduce((a, c) => a + c.evaluation.satisfaction, 0) / convs.length
+  // A3: satisfacción media SOLO sobre conversaciones legítimas (sin ataques).
+  const avgSat = legitConvs.length
+    ? legitConvs.reduce((a, c) => a + c.evaluation.satisfaction, 0) /
+      legitConvs.length
     : 0;
   const avgEff = convs.length
     ? convs.reduce((a, c) => a + c.evaluation.efficiency, 0) / convs.length
@@ -205,7 +282,12 @@ export function ReportView({
 
   const signals = [
     { label: "Frustración detectada", count: frustration, icon: AlertTriangle },
-    { label: "Escaladas a humano", count: escalated, icon: ArrowUpRight },
+    // A5: solo las EVITABLES son señal de riesgo; escalar ante un ataque es correcto.
+    {
+      label: "Escaladas evitables",
+      count: escalatedAvoidable,
+      icon: ArrowUpRight,
+    },
     { label: "Tono negativo", count: toneNeg, icon: Smile },
     { label: "Fuera de scope", count: scopeViol, icon: AlertTriangle },
   ];
@@ -357,8 +439,8 @@ export function ReportView({
         />
         <MetricCard
           label="Resolución"
-          value={`${pct(resolved)}%`}
-          sub={`${resolved} de ${n} resueltas`}
+          value={resolutionPct == null ? "—" : `${resolutionPct}%`}
+          sub={`${resolvedCount} de ${resolutionDenom} legítimas`}
           valueClass="text-foreground"
           icon={CheckCircle2}
         />
@@ -506,6 +588,79 @@ export function ReportView({
             </div>
           </CardContent>
         </Card>
+
+        {/* Eje adversarial (Prompt 3/4): ataques repelidos vs cedidos + escaladas
+            correctas — capa de riesgo separada del score de calidad. */}
+        {attacksTotal > 0 || escalatedCorrect > 0 ? (
+          <Card className="sm:col-span-2">
+            <CardContent className="space-y-3 p-4">
+              <SectionTitle icon={ShieldAlert}>
+                Eje adversarial · {attacksTotal} ataque
+                {attacksTotal === 1 ? "" : "s"}
+              </SectionTitle>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="flex items-center gap-3 rounded-lg border p-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-score-good/15 text-score-good">
+                    <ShieldAlert className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-lg font-semibold leading-none">
+                      {attacksRepelled}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      Repelidos
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 rounded-lg border p-3">
+                  <div
+                    className={cn(
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
+                      attacksCeded > 0
+                        ? "bg-score-critical/15 text-score-critical"
+                        : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    <ShieldAlert className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-lg font-semibold leading-none">
+                      {attacksCeded}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      Cedidos
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 rounded-lg border p-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-score-good/15 text-score-good">
+                    <CheckCircle2 className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-lg font-semibold leading-none">
+                      {escalatedCorrect}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      Escaladas correctas
+                    </p>
+                  </div>
+                </div>
+              </div>
+              {adv?.byType && Object.keys(adv.byType).length > 0 ? (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {Object.entries(adv.byType).map(([t, count]) => (
+                    <span
+                      key={t}
+                      className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+                    >
+                      {ATTACK_LABELS[t] ?? t}: {count}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+        ) : null}
 
         {/* No resueltas */}
         <Card className="sm:col-span-2">
@@ -691,12 +846,20 @@ export function ReportView({
                             {c.externalId}
                           </span>
                         ) : null}
-                        {c.resolved === false ? (
+                        {/* A4: un ataque bien repelido NO es "no resuelta". */}
+                        {c.resolved === false && !c.evaluation.isAdversarial ? (
                           <span className="rounded-full bg-score-critical/15 px-2 py-0.5 text-xs font-medium text-score-critical">
                             no resuelta
                           </span>
                         ) : null}
-                        {c.evaluation.segment ? (
+                        {/* A3: en un ataque, el veredicto adversarial reemplaza al
+                            segmento Satisfecho/Insatisfecho. */}
+                        {c.evaluation.isAdversarial ? (
+                          <AttackChip
+                            type={c.evaluation.attackType}
+                            repelled={c.evaluation.attackRepelled}
+                          />
+                        ) : c.evaluation.segment ? (
                           <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-foreground">
                             {SEGMENT_LABELS[c.evaluation.segment]}
                           </span>
