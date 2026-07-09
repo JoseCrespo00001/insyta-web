@@ -32,6 +32,25 @@ export async function downloadAuditServerCsv(
   );
 }
 
+/** Descarga el CSV de todos los clientes del proyecto (perfil + reputación). */
+export async function downloadClientsCsv(projectId: string) {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const res = await fetch(
+    `${API_URL}/api/v1/projects/${projectId}/clients/export.csv`,
+    {
+      headers: session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {},
+    },
+  );
+  if (!res.ok) throw new Error("No se pudo exportar el CSV de clientes");
+  const text = await res.text();
+  triggerDownload(`clientes_${projectId}.csv`, text, "text/csv");
+}
+
 function triggerDownload(filename: string, content: string, mime: string) {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);

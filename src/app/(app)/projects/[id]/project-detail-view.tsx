@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { AuditComposer } from "./sections/audit-composer";
 import { AuditoriasTab } from "./sections/auditorias-tab";
+import { ClientesTab } from "./sections/clientes-tab";
 import { ConversacionesTab } from "./sections/conversaciones-tab";
 import { FlujosTab } from "./sections/flujos-tab";
 import { ResumenTab } from "./sections/resumen-tab";
@@ -257,6 +258,7 @@ export function ProjectDetailView({
             <TabsTrigger value="flujos">Flujos</TabsTrigger>
             <TabsTrigger value="conversaciones">Conversaciones</TabsTrigger>
             <TabsTrigger value="auditorias">Auditorías</TabsTrigger>
+            <TabsTrigger value="clientes">Clientes</TabsTrigger>
           </TabsList>
 
           <TabsContent value="resumen">
@@ -297,6 +299,10 @@ export function ProjectDetailView({
               onArchiveAudit={archiveAudit}
               onDeleteAudit={deleteAudit}
             />
+          </TabsContent>
+
+          <TabsContent value="clientes">
+            <ClientesTab projectId={projectId} />
           </TabsContent>
         </Tabs>
       )}
