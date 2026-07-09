@@ -69,7 +69,20 @@ export type ConversationEvaluation = {
   sentimentTrajectory?: string[];
   requiereRevisionHumana?: boolean;
   rubric?: Rubric | null;
+  // Eje adversarial (Prompt 3/4). Opcionales: el backend siempre los manda; mocks no.
+  isAdversarial?: boolean;
+  attackType?: AttackType | null;
+  attackRepelled?: boolean | null; // true = repelido · false = cedido · null = N/A
+  vetoConfidence?: number | null;
 };
+
+/** Tipo de ataque adversarial detectado (Prompt 3/4). */
+export type AttackType =
+  | "jailbreak"
+  | "prompt_injection"
+  | "manipulacion_legal"
+  | "manipulacion_precio"
+  | "otro";
 
 export type ConversationSegment =
   | "cliente_ideal"
@@ -177,12 +190,35 @@ export type FlujoImprovement = {
   conversations: Conversation[]; // las que necesitaron esta mejora
 };
 
+/** Ataques adversariales agregados (Prompt 3/4): repelidos vs cedidos. */
+export type AdversarialStats = {
+  total: number;
+  repelled: number;
+  ceded: number;
+  byType: Partial<Record<AttackType, number>>;
+};
+
+/** Resolución (A4): denominador = conversaciones legítimas (no ataques). */
+export type ResolutionStats = {
+  resolved: number;
+  legitimate: number;
+  pct: number | null;
+  correctlyRejected: number; // ataques bien repelidos, NO cuentan como "no resueltas"
+};
+
+/** Escaladas (A5): correctas (ante ataque/fuera de scope) vs evitables. */
+export type EscalationStats = {
+  correct: number;
+  avoidable: number;
+};
+
 /** Capa de riesgo del reporte (separada del score promedio). */
 export type AuditRisk = {
   withVeto: number;
   needsReview: number;
   critical: number;
   bySeverity: { critica: number; alta: number; media: number; baja: number };
+  adversarial?: AdversarialStats; // Prompt 3/4: ataques repelidos vs cedidos
 };
 
 /** Resultado de una auditoría. */
@@ -191,6 +227,8 @@ export type Report = {
   avgScore?: number | null; // B1: score promedio VISIBLE (topeado por VETO) — fuente back
   satisfaction: Record<Satisfaction, number>;
   risk?: AuditRisk; // capa de riesgo agregada
+  resolution?: ResolutionStats | null; // A4: denominador = legítimas — fuente back
+  escalations?: EscalationStats | null; // A5: correctas vs evitables — fuente back
   failing: Conversation[]; // conversaciones donde el agente no resolvió
   conversations: Conversation[]; // todas las auditadas (para métricas agregadas)
   suggestions: Suggestion[];

@@ -1,4 +1,5 @@
 import type {
+  AttackType,
   Audit,
   ChatMessage,
   Conversation,
@@ -288,6 +289,17 @@ function buildEvaluation(
     evaluatedAt: new Date(
       Date.parse("2026-06-10T09:00:00-03:00") + index * 1_800_000 + 600_000,
     ).toISOString(),
+    // Eje adversarial (preview): index 1 = jailbreak repelido, index 4 = manipulación
+    // legal cedida. Demuestran que un ataque no aparece como "Satisfecho".
+    isAdversarial: index === 1 || index === 4,
+    attackType:
+      index === 1
+        ? "prompt_injection"
+        : index === 4
+          ? "manipulacion_legal"
+          : null,
+    attackRepelled: index === 1 ? true : index === 4 ? false : null,
+    vetoConfidence: index === 4 ? 0.8 : null,
   };
 }
 
@@ -412,13 +424,54 @@ export function buildReport(conversations: Conversation[]): Report {
     neutral: 0,
     insatisfecho: 0,
   };
+  // Eje adversarial (Prompt 3/4): los ataques se cuentan aparte y salen del
+  // promedio de satisfacción y del denominador de resolución.
+  const byType: Partial<Record<AttackType, number>> = {};
+  let advTotal = 0;
+  let repelled = 0;
+  let ceded = 0;
+  let resolved = 0;
+  let legit = 0;
+  let escCorrect = 0;
+  let escAvoidable = 0;
   for (const c of conversations) {
-    if (c.satisfaction) satisfaction[c.satisfaction] += 1;
+    const e = c.evaluation;
+    if (e.isAdversarial) {
+      advTotal += 1;
+      if (e.attackRepelled) repelled += 1;
+      else ceded += 1;
+      const t: AttackType = e.attackType ?? "otro";
+      byType[t] = (byType[t] ?? 0) + 1;
+    } else {
+      legit += 1;
+      if (c.satisfaction) satisfaction[c.satisfaction] += 1;
+      if (e.resolution) resolved += 1;
+    }
+    if (e.escalated) {
+      if (e.isAdversarial || e.scopeViolation) escCorrect += 1;
+      else escAvoidable += 1;
+    }
   }
   return {
     total: conversations.length,
     satisfaction,
-    failing: conversations.filter((c) => c.resolved === false),
+    risk: {
+      withVeto: ceded,
+      needsReview: 0,
+      critical: ceded,
+      bySeverity: { critica: ceded, alta: 0, media: 0, baja: 0 },
+      adversarial: { total: advTotal, repelled, ceded, byType },
+    },
+    resolution: {
+      resolved,
+      legitimate: legit,
+      pct: legit ? Math.round((resolved / legit) * 100) : null,
+      correctlyRejected: repelled,
+    },
+    escalations: { correct: escCorrect, avoidable: escAvoidable },
+    failing: conversations.filter(
+      (c) => c.resolved === false && !c.evaluation.isAdversarial,
+    ),
     conversations,
     suggestions: SAMPLE_SUGGESTIONS,
   };
