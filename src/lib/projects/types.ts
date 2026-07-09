@@ -187,10 +187,12 @@ export type Audit = {
   flujoId: string;
   flujoName: string;
   conversationCount: number;
+  evaluatedCount: number; // conversaciones ya procesadas (progreso)
   emphasis: string[]; // keys de EmphasisOption
   freeText: string;
   createdAt: string; // ISO
   // running = el judge corriendo · failed = el judge falló (p.ej. falta API key)
   status: "running" | "active" | "archived" | "failed";
+  errorMessage: string | null; // motivo del fallo (p.ej. falta API key)
   report: Report;
 };

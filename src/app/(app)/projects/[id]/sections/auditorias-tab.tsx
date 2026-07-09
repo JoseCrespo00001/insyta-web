@@ -167,23 +167,57 @@ export function AuditoriasTab({
                   {formatDateTime(a.createdAt)}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex items-center justify-between gap-2">
-                <span className="text-sm text-muted-foreground">
-                  {a.status === "running"
-                    ? "El judge está evaluando…"
-                    : a.status === "failed"
-                      ? "El judge no pudo completar la auditoría"
-                      : `${a.report.satisfaction?.satisfecho ?? 0} satisfechas · ${
-                          a.report.total ?? a.conversationCount
-                        } auditadas`}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setViewing(a)}
-                >
-                  Ver reporte
-                </Button>
+              <CardContent className="space-y-3">
+                {a.status === "running" ? (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <span>El judge está evaluando…</span>
+                      <span className="tabular-nums">
+                        {a.evaluatedCount}/{a.conversationCount}
+                      </span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-primary transition-all duration-500"
+                        style={{
+                          width: `${
+                            a.conversationCount
+                              ? Math.max(
+                                  4,
+                                  Math.round(
+                                    (a.evaluatedCount / a.conversationCount) *
+                                      100,
+                                  ),
+                                )
+                              : 4
+                          }%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : a.status === "failed" ? (
+                  <p className="text-sm text-score-critical">
+                    {/key|api|llm/i.test(a.errorMessage ?? "")
+                      ? "Falta la API key del motor. Configurala en Perfil → Extensiones y volvé a correr la auditoría."
+                      : a.errorMessage ||
+                        "El judge no pudo completar la auditoría"}
+                  </p>
+                ) : (
+                  <span className="text-sm text-muted-foreground">
+                    {`${a.report.satisfaction?.satisfecho ?? 0} satisfechas · ${
+                      a.report.total ?? a.conversationCount
+                    } auditadas`}
+                  </span>
+                )}
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setViewing(a)}
+                  >
+                    Ver reporte
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}

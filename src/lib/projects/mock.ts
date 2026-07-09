@@ -426,10 +426,12 @@ export const SAMPLE_AUDITS: Audit[] = [
     flujoId: "flj_ventas_v14",
     flujoName: "Bot Ventas",
     conversationCount: SAMPLE_CONVERSATIONS.length,
+    evaluatedCount: SAMPLE_CONVERSATIONS.length,
     emphasis: ["resolucion", "frustracion"],
     freeText: "Foco en por qué se pierden ventas en checkout.",
     createdAt: "2026-05-28T17:00:00Z",
     status: "active",
+    errorMessage: null,
     report: buildReport(SAMPLE_CONVERSATIONS),
   },
 ];
