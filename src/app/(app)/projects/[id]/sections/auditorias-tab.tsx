@@ -92,7 +92,9 @@ export function AuditoriasTab({
             </p>
           </div>
           <ReportActions
-            audit={viewing}
+            // B3: exportar el reporte del DETALLE (failing/conversations poblados),
+            // no el de la lista (que llega vacío). viewingReport = detalle ?? lista.
+            audit={{ ...viewing, report: viewingReport }}
             onArchive={(id) => {
               onArchiveAudit(id);
               setViewing(null);

@@ -132,9 +132,19 @@ export function ConversationReport({
               </span>
             ) : null}
             {e.hasVeto ? (
-              <span className="rounded-full bg-score-critical/15 px-2 py-0.5 text-xs font-medium text-score-critical">
-                VETO: {(e.vetoFlags ?? []).join(", ")}
-              </span>
+              e.vetoFirm !== false ? (
+                <span className="rounded-full bg-score-critical/15 px-2 py-0.5 text-xs font-medium text-score-critical">
+                  VETO: {(e.vetoFlags ?? []).join(", ")}
+                </span>
+              ) : (
+                // B7: VETO tentativo (LLM baja confianza) → ámbar, no topeó el score.
+                <span
+                  className="rounded-full bg-score-risk/15 px-2 py-0.5 text-xs font-medium text-score-risk"
+                  title="VETO tentativo: baja confianza; no topea el score hasta confirmarlo."
+                >
+                  VETO · a confirmar: {(e.vetoFlags ?? []).join(", ")}
+                </span>
+              )
             ) : null}
             {typeof e.confidence === "number" ? (
               <span className="text-xs text-muted-foreground">

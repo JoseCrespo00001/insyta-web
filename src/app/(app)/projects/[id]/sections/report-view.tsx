@@ -98,6 +98,26 @@ function SectionTitle({
   );
 }
 
+/**
+ * Chip de VETO (B7): firme = detección dura (validador determinista o LLM con
+ * confianza alta) → topea el score, en rojo. Tentativo = LLM con confianza baja
+ * → NO topea, se marca "a confirmar" en ámbar para que el dueño lo revise.
+ */
+function VetoChip({ firm }: { firm: boolean }) {
+  return firm ? (
+    <span className="rounded-full bg-score-critical/15 px-2 py-0.5 text-[11px] font-medium text-score-critical">
+      VETO
+    </span>
+  ) : (
+    <span
+      className="rounded-full bg-score-risk/15 px-2 py-0.5 text-[11px] font-medium text-score-risk"
+      title="VETO tentativo: el LLM lo marcó con baja confianza; no topea el score hasta confirmarlo."
+    >
+      VETO · a confirmar
+    </span>
+  );
+}
+
 export function ReportView({
   report,
   onSelectConversation,
@@ -143,11 +163,17 @@ export function ReportView({
   const pct = (x: number) => Math.round((x / n) * 100);
 
   const scored = convs.filter((c) => c.score != null);
-  const avgScore = scored.length
-    ? Math.round(
-        scored.reduce((a, c) => a + (c.score as number), 0) / scored.length,
-      )
-    : null;
+  // B1: el score promedio VISIBLE (topeado por VETO) lo calcula el backend
+  // (report.avgScore); el front lo consume, no lo recalcula. Fallback al cálculo
+  // local solo si un payload viejo/lista no lo trae.
+  const avgScore =
+    report.avgScore != null
+      ? report.avgScore
+      : scored.length
+        ? Math.round(
+            scored.reduce((a, c) => a + (c.score as number), 0) / scored.length,
+          )
+        : null;
   const resolved = convs.filter((c) => c.evaluation.resolution).length;
   const escalated = convs.filter((c) => c.evaluation.escalated).length;
   const frustration = convs.filter((c) => c.evaluation.frustration).length;
@@ -201,6 +227,9 @@ export function ReportView({
   };
   const humanVeto = (f: string) => VETO_LABELS[f] ?? f.replace(/_/g, " ");
   const reasonFor = (c: Conversation): string => {
+    // B3: el motivo en lenguaje humano lo calcula el backend (c.reason); el front
+    // lo consume. Fallback al cálculo local solo si un payload viejo no lo trae.
+    if (c.reason) return c.reason;
     const ev = c.evaluation;
     if (ev.hasVeto && ev.vetoFlags?.length)
       return ev.vetoFlags.map(humanVeto).join(" · ");
@@ -271,9 +300,7 @@ export function ReportView({
                         {c.contactName || c.externalId}
                       </span>
                       {c.evaluation.hasVeto ? (
-                        <span className="rounded-full bg-score-critical/15 px-2 py-0.5 text-[11px] font-medium text-score-critical">
-                          VETO
-                        </span>
+                        <VetoChip firm={c.evaluation.vetoFirm !== false} />
                       ) : null}
                     </div>
                     <p className="truncate text-xs text-score-critical">
@@ -511,9 +538,12 @@ export function ReportView({
                         <span className="text-sm font-medium">
                           {c.contactName}
                         </span>
-                        <span className="text-xs text-muted-foreground">
-                          #{c.externalId}
-                        </span>
+                        {c.externalId && c.externalId !== c.contactName ? (
+                          // B5: externalId ya viene pseudonimizado ("cliente #<hash>").
+                          <span className="text-xs text-muted-foreground">
+                            {c.externalId}
+                          </span>
+                        ) : null}
                       </div>
                       <p className="truncate text-sm text-muted-foreground">
                         {c.preview}
@@ -638,9 +668,12 @@ export function ReportView({
                         <span className="text-sm font-medium">
                           {c.contactName}
                         </span>
-                        <span className="text-xs text-muted-foreground">
-                          #{c.externalId}
-                        </span>
+                        {c.externalId && c.externalId !== c.contactName ? (
+                          // B5: externalId ya viene pseudonimizado ("cliente #<hash>").
+                          <span className="text-xs text-muted-foreground">
+                            {c.externalId}
+                          </span>
+                        ) : null}
                         {c.resolved === false ? (
                           <span className="rounded-full bg-score-critical/15 px-2 py-0.5 text-xs font-medium text-score-critical">
                             no resuelta
@@ -652,9 +685,19 @@ export function ReportView({
                           </span>
                         ) : null}
                         {c.evaluation.hasVeto ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-score-critical/15 px-2 py-0.5 text-xs font-medium text-score-critical">
-                            <ShieldAlert className="h-3 w-3" /> VETO
-                          </span>
+                          c.evaluation.vetoFirm !== false ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-score-critical/15 px-2 py-0.5 text-xs font-medium text-score-critical">
+                              <ShieldAlert className="h-3 w-3" /> VETO
+                            </span>
+                          ) : (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full bg-score-risk/15 px-2 py-0.5 text-xs font-medium text-score-risk"
+                              title="VETO tentativo: baja confianza; no topea el score hasta confirmarlo."
+                            >
+                              <ShieldAlert className="h-3 w-3" /> VETO · a
+                              confirmar
+                            </span>
+                          )
                         ) : null}
                       </div>
                       <p className="truncate text-sm text-muted-foreground">

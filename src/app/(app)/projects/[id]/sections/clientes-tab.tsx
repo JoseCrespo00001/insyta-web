@@ -47,9 +47,7 @@ function ProfileView({ p }: { p: ClientProfile }) {
           <ShieldAlert className="h-5 w-5 text-score-critical" />
         )}
         <div>
-          <p className="text-base font-semibold">
-            {p.contactName || p.externalId}
-          </p>
+          <p className="text-base font-semibold">{p.display}</p>
           <p className="text-xs text-muted-foreground">
             {p.respectful ? "Cliente respetuoso" : "Requiere cuidado"} ·{" "}
             {ETIQUETA_LABEL[p.etiqueta] ?? p.etiqueta}
@@ -157,12 +155,12 @@ export function ClientesTab({ projectId }: { projectId: string }) {
           <div className="space-y-1.5">
             {clients.map((c) => (
               <button
-                key={c.externalId}
+                key={c.userKey}
                 type="button"
-                onClick={() => setSelected(c.externalId)}
+                onClick={() => setSelected(c.userKey)}
                 className={cn(
                   "flex w-full items-center gap-3 rounded-md border p-3 text-left transition-colors hover:bg-muted",
-                  selected === c.externalId && "border-primary bg-primary/5",
+                  selected === c.userKey && "border-primary bg-primary/5",
                 )}
               >
                 {c.respectful ? (
@@ -173,7 +171,7 @@ export function ClientesTab({ projectId }: { projectId: string }) {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="truncate text-sm font-medium">
-                      {c.contactName || c.externalId}
+                      {c.display}
                     </span>
                     <span
                       className={cn(
