@@ -95,6 +95,15 @@ export type Rubric = {
   requiere_revision_humana: boolean;
 };
 
+/** Veredicto del judge por mensaje (para la capa de riesgo del reporte). */
+export type MessageVerdict = {
+  label: string | null; // ok | warning | error
+  issueType: string | null; // alucinacion | alcance | contradiccion | ...
+  issueSubtype: string | null;
+  severity: string | null; // baja | media | alta | critica
+  note: string | null;
+};
+
 export type Conversation = {
   id: string;
   uploadGroupId: string; // CSV de origen (agrupa la carga)
@@ -105,6 +114,9 @@ export type Conversation = {
   userMessages: number;
   botMessages: number;
   messages: ChatMessage[]; // transcript para ver el chat
+  messageEvaluations?: MessageVerdict[]; // verdicts por mensaje (riesgo)
+  needsIntervention?: boolean; // el backend ya lo computó
+  riskScore?: number; // para ordenar por urgencia
   score: number | null;
   satisfaction: Satisfaction | null;
   resolved: boolean | null; // false = el agente no resolvió
@@ -154,10 +166,19 @@ export type FlujoImprovement = {
   conversations: Conversation[]; // las que necesitaron esta mejora
 };
 
+/** Capa de riesgo del reporte (separada del score promedio). */
+export type AuditRisk = {
+  withVeto: number;
+  needsReview: number;
+  critical: number;
+  bySeverity: { critica: number; alta: number; media: number; baja: number };
+};
+
 /** Resultado de una auditoría. */
 export type Report = {
   total: number;
   satisfaction: Record<Satisfaction, number>;
+  risk?: AuditRisk; // capa de riesgo agregada
   failing: Conversation[]; // conversaciones donde el agente no resolvió
   conversations: Conversation[]; // todas las auditadas (para métricas agregadas)
   suggestions: Suggestion[];
