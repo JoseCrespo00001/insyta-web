@@ -103,7 +103,19 @@ export function AuditoriasTab({
             }}
           />
         </div>
-        {viewingReport ? (
+        {viewing.status === "failed" ? (
+          <Card>
+            <CardContent className="space-y-1 p-6">
+              <p className="text-sm text-score-critical">
+                {viewing.errorMessage ||
+                  "El judge no pudo completar esta auditoría."}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Una auditoría fallida no tiene reporte. Corré una nueva.
+              </p>
+            </CardContent>
+          </Card>
+        ) : viewingReport ? (
           <ReportView
             report={viewingReport}
             onSelectConversation={setViewingConv}
