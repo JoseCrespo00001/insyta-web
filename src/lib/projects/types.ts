@@ -143,6 +143,12 @@ export type Suggestion = {
   impact: string; // ej: "+12% satisfacción estimada"
   node_json?: string | null; // snippet JSON del nodo a agregar al flujo
   prompt?: string | null; // prompt para pasarle a la IA del flujo
+  // Prompt 2/4: sugerencias accionables cuando no hay flujo cargado. Keys en
+  // snake_case porque el back las pasa tal cual (queries/audits.ts no remapea).
+  evidencia?: string | null; // qué issues + cuántos mensajes + ejemplos reales
+  causa_probable?: string | null; // hipótesis en una frase
+  parche_prompt?: string | null; // bloque de system prompt pegable (copiable)
+  como_verificar?: string | null; // cómo reauditar y qué esperar
 };
 
 /** Un paso de la ejecución del flujo (al probarlo). */

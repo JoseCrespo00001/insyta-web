@@ -141,6 +141,7 @@ function ApplyButton({
 export function SuggestionExtras({
   nodeJson,
   prompt,
+  parchePrompt,
   flowJson,
   onApply,
   applying,
@@ -148,13 +149,14 @@ export function SuggestionExtras({
 }: {
   nodeJson?: string | null;
   prompt?: string | null;
+  parchePrompt?: string | null; // Prompt 2/4: parche de system prompt pegable
   flowJson?: string | null; // si viene, habilita el merge al flujo completo
   // Si viene, habilita "Aplicar al flujo y guardar" (persiste una versión).
   onApply?: (mergedFlowJson: string) => void;
   applying?: boolean;
   applied?: boolean;
 }) {
-  if (!nodeJson && !prompt) return null;
+  if (!nodeJson && !prompt && !parchePrompt) return null;
   return (
     <div className="mt-2 space-y-2">
       {onApply && flowJson && nodeJson ? (
@@ -165,6 +167,20 @@ export function SuggestionExtras({
           applied={applied}
           onApply={onApply}
         />
+      ) : null}
+      {parchePrompt ? (
+        <details className="rounded-md border bg-muted/30" open>
+          <summary className="flex cursor-pointer items-center gap-1.5 px-3 py-2 text-xs font-medium">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            Parche de system prompt (pegá esto en tu agente)
+          </summary>
+          <div className="space-y-2 px-3 pb-3">
+            <pre className="max-h-72 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 font-mono text-[11px] leading-relaxed">
+              {parchePrompt}
+            </pre>
+            <CopyButton text={parchePrompt} label="Copiar parche" />
+          </div>
+        </details>
       ) : null}
       {prompt ? (
         <details className="rounded-md border bg-muted/30">

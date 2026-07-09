@@ -575,9 +575,26 @@ export function ReportView({
                   <p className="mt-1 text-sm text-muted-foreground">
                     {s.detail}
                   </p>
+                  {s.evidencia ? (
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">
+                        Evidencia:{" "}
+                      </span>
+                      {s.evidencia}
+                    </p>
+                  ) : null}
+                  {s.como_verificar ? (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">
+                        Cómo verificar:{" "}
+                      </span>
+                      {s.como_verificar}
+                    </p>
+                  ) : null}
                   <SuggestionExtras
                     nodeJson={s.node_json}
                     prompt={s.prompt}
+                    parchePrompt={s.parche_prompt}
                     flowJson={flowJson}
                   />
                 </div>
