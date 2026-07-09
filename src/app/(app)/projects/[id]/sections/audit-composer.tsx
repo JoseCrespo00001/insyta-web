@@ -1,5 +1,7 @@
 import * as React from "react";
+import Link from "next/link";
 import {
+  AlertTriangle,
   ArrowLeft,
   BrainCircuit,
   Play,
@@ -22,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { EMPHASIS_OPTIONS } from "@/lib/projects/mock";
-import { useSupervisors } from "@/lib/queries";
+import { useLlmKeys, useSupervisors } from "@/lib/queries";
 import type { Conversation, Flujo } from "@/lib/projects/types";
 import { cn } from "@/lib/utils";
 
@@ -90,9 +92,15 @@ export function AuditComposer({
   const [query, setQuery] = React.useState("");
 
   const selectedCount = picked.size;
+  const { data: llmKeys } = useLlmKeys();
+  // Si falta la key del motor elegido, correr no tiene sentido (el judge falla con
+  // FatalLLMError). Mientras las keys cargan (undefined) no bloqueamos.
+  const keyMissing =
+    llmKeys !== undefined &&
+    !llmKeys.find((k) => k.provider === provider)?.configured;
   // El flujo es OPCIONAL: se puede auditar solo con conversaciones + la data de la
   // empresa (supervisor/knowledge). Con conversaciones seleccionadas alcanza.
-  const canRun = selectedCount > 0;
+  const canRun = selectedCount > 0 && !keyMissing;
 
   function toggleEmphasis(key: string) {
     setEmphasis((prev) =>
@@ -185,6 +193,22 @@ export function AuditComposer({
           Correr auditoría ({selectedCount})
         </Button>
       </div>
+
+      {keyMissing ? (
+        <div className="flex items-start gap-2 rounded-lg border border-score-critical/40 bg-score-critical/10 px-3 py-2.5 text-sm text-score-critical">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            Falta la API key de <strong>{provider}</strong>. Configurala en{" "}
+            <Link
+              href="/perfil"
+              className="font-medium underline underline-offset-2"
+            >
+              Perfil → Extensiones
+            </Link>{" "}
+            antes de correr la auditoría.
+          </span>
+        </div>
+      ) : null}
 
       <div className="grid gap-5 lg:grid-cols-2">
         {/* Izquierda: flujo + énfasis */}

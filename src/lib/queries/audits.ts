@@ -25,10 +25,12 @@ export type AuditDto = {
   flujoId: string | null;
   flujoName: string | null;
   conversationCount: number;
+  evaluatedCount: number;
   emphasis: string[];
   freeText: string;
   createdAt: string;
   status: string;
+  errorMessage: string | null;
   report: {
     total: number;
     satisfaction: Record<string, number>;
