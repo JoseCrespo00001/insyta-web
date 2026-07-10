@@ -4,12 +4,14 @@ import {
   ChevronRight,
   ClipboardList,
   MessagesSquare,
+  ShieldAlert,
   Workflow,
 } from "lucide-react";
 
 import { ReportActions } from "./report-actions";
 import { ReportView } from "./report-view";
 import { ConversationWorkspace } from "@/components/shared/conversation-workspace";
+import { ScoreBadge } from "@/components/shared/score-badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -40,6 +42,73 @@ function Stat({
         <p className="text-3xl font-bold tracking-tight">{value}</p>
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Datos usables del card de una auditoría, según su estado:
+ * - failed → "Falló" (motivo en el tooltip); running → progreso.
+ * - con datos → score + satisfacción + ataques (si hay).
+ * - sin datos evaluados → "Sin evaluar" en vez de chips vacíos.
+ */
+function AuditStats({ audit }: { audit: Audit }) {
+  if (audit.status === "failed") {
+    return (
+      <span
+        className="rounded-full bg-score-critical/15 px-2 py-0.5 text-xs font-medium text-score-critical"
+        title={audit.errorMessage ?? undefined}
+      >
+        Falló
+      </span>
+    );
+  }
+  if (audit.status === "running") {
+    return (
+      <span className="rounded-full bg-score-risk/15 px-2 py-0.5 text-xs font-medium text-score-risk">
+        En curso · {audit.evaluatedCount}/{audit.conversationCount}
+      </span>
+    );
+  }
+  const sat = (audit.report?.satisfaction ?? {}) as Partial<
+    Record<string, number>
+  >;
+  const satTotal =
+    (sat.satisfecho ?? 0) + (sat.neutral ?? 0) + (sat.insatisfecho ?? 0);
+  const avgScore = audit.report?.avgScore ?? null;
+  const attacks = audit.report?.adversarial?.total ?? 0;
+
+  // Sin datos evaluados → no mostramos chips vacíos.
+  if (satTotal === 0 && avgScore == null) {
+    return (
+      <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+        Sin evaluar
+      </span>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-2 text-xs">
+      {avgScore != null ? <ScoreBadge score={avgScore} /> : null}
+      {satTotal > 0 ? (
+        <>
+          <span className="rounded-full bg-score-good/15 px-2 py-0.5 font-medium">
+            {sat.satisfecho ?? 0} satisfechas
+          </span>
+          <span className="rounded-full bg-score-risk/15 px-2 py-0.5 font-medium">
+            {sat.neutral ?? 0} neutrales
+          </span>
+          <span className="rounded-full bg-score-critical/15 px-2 py-0.5 font-medium">
+            {sat.insatisfecho ?? 0} insatisfechas
+          </span>
+        </>
+      ) : null}
+      {attacks > 0 ? (
+        <span className="inline-flex items-center gap-1 rounded-full bg-score-critical/15 px-2 py-0.5 font-medium text-score-critical">
+          <ShieldAlert className="h-3 w-3" />
+          {attacks} {attacks === 1 ? "ataque" : "ataques"}
+        </span>
+      ) : null}
+    </div>
   );
 }
 
@@ -156,16 +225,23 @@ export function ResumenTab({
             {audits.map((a) => (
               <Card
                 key={a.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => setViewing(a)}
+                role={a.status === "failed" ? undefined : "button"}
+                tabIndex={a.status === "failed" ? undefined : 0}
+                onClick={() => a.status !== "failed" && setViewing(a)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
+                  if (
+                    a.status !== "failed" &&
+                    (e.key === "Enter" || e.key === " ")
+                  ) {
                     e.preventDefault();
                     setViewing(a);
                   }
                 }}
-                className="cursor-pointer transition-colors hover:border-primary/50 hover:bg-muted/40"
+                className={
+                  a.status === "failed"
+                    ? "transition-colors"
+                    : "cursor-pointer transition-colors hover:border-primary/50 hover:bg-muted/40"
+                }
               >
                 <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
                   <div className="min-w-0">
@@ -183,21 +259,13 @@ export function ResumenTab({
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-3">
-                    <div className="flex gap-2 text-xs">
-                      <span className="rounded-full bg-score-good/15 px-2 py-0.5 font-medium">
-                        {a.report.satisfaction.satisfecho} satisfechas
+                    <AuditStats audit={a} />
+                    {a.status !== "failed" ? (
+                      <span className="hidden items-center gap-1 text-sm font-medium text-primary sm:flex">
+                        Ver reporte
+                        <ChevronRight className="h-4 w-4" />
                       </span>
-                      <span className="rounded-full bg-score-risk/15 px-2 py-0.5 font-medium">
-                        {a.report.satisfaction.neutral} neutrales
-                      </span>
-                      <span className="rounded-full bg-score-critical/15 px-2 py-0.5 font-medium">
-                        {a.report.satisfaction.insatisfecho} insatisfechas
-                      </span>
-                    </div>
-                    <span className="hidden items-center gap-1 text-sm font-medium text-primary sm:flex">
-                      Ver reporte
-                      <ChevronRight className="h-4 w-4" />
-                    </span>
+                    ) : null}
                   </div>
                 </CardContent>
               </Card>
