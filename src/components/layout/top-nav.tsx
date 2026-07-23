@@ -41,6 +41,11 @@ import {
 } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 
+// Campana deshabilitada: las notificaciones son mock (data inventada de
+// lib/notifications.ts) y no hay feed real del backend todavía. Flip a true
+// cuando exista el endpoint de notificaciones.
+const NOTIFICATIONS_ENABLED = false;
+
 const NOTIF_ICON: Record<NotifKind, typeof Bell> = {
   audit: ClipboardList,
   suspicious: AlertTriangle,
@@ -123,60 +128,64 @@ export function TopNav() {
       <div
         className={cn("ml-auto flex shrink-0 items-center gap-1 p-1", island)}
       >
-        {/* Notificaciones */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="relative flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              aria-label="Notificaciones"
+        {/* Notificaciones (ocultas hasta tener feed real — ver NOTIFICATIONS_ENABLED) */}
+        {NOTIFICATIONS_ENABLED ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="relative flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                aria-label="Notificaciones"
+              >
+                <Bell className="h-4 w-4" />
+                {UNREAD_COUNT > 0 ? (
+                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive" />
+                ) : null}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="max-h-[70vh] w-[min(20rem,calc(100vw-1.5rem))] overflow-y-auto"
             >
-              <Bell className="h-4 w-4" />
-              {UNREAD_COUNT > 0 ? (
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive" />
-              ) : null}
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="max-h-[70vh] w-[min(20rem,calc(100vw-1.5rem))] overflow-y-auto"
-          >
-            <DropdownMenuLabel className="flex items-center justify-between">
-              Notificaciones
-              {UNREAD_COUNT > 0 ? (
-                <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium">
-                  {UNREAD_COUNT} nuevas
-                </span>
-              ) : null}
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {NOTIFICATIONS.map((n) => {
-              const Icon = NOTIF_ICON[n.kind];
-              return (
-                <DropdownMenuItem
-                  key={n.id}
-                  className="flex items-start gap-3 py-2.5"
-                >
-                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted">
-                    <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
-                  <div className="min-w-0 space-y-0.5">
-                    <p className="flex items-center gap-1.5 text-sm font-medium">
-                      {n.title}
-                      {!n.read ? (
-                        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                      ) : null}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{n.detail}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {formatDateTime(n.at)}
-                    </p>
-                  </div>
-                </DropdownMenuItem>
-              );
-            })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuLabel className="flex items-center justify-between">
+                Notificaciones
+                {UNREAD_COUNT > 0 ? (
+                  <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium">
+                    {UNREAD_COUNT} nuevas
+                  </span>
+                ) : null}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {NOTIFICATIONS.map((n) => {
+                const Icon = NOTIF_ICON[n.kind];
+                return (
+                  <DropdownMenuItem
+                    key={n.id}
+                    className="flex items-start gap-3 py-2.5"
+                  >
+                    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted">
+                      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0 space-y-0.5">
+                      <p className="flex items-center gap-1.5 text-sm font-medium">
+                        {n.title}
+                        {!n.read ? (
+                          <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                        ) : null}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {n.detail}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {formatDateTime(n.at)}
+                      </p>
+                    </div>
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
 
         {/* Tema */}
         <button

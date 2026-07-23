@@ -38,7 +38,7 @@
       "pattern": "Order tracking + frustration — score 31% below baseline",
       "improvementLabel": "Proposed improvement",
       "improvement": "Ask for the order number before escalating and give a concrete ETA.",
-      "delta": "+18 pts verified at 14 days"
+      "delta": "+18 pts on re-audit"
     }
   },
   "problem": {
@@ -85,7 +85,7 @@
       {
         "step": "04",
         "title": "We improve and verify",
-        "description": "We propose prompt changes, validate them with semantic regression testing and measure the impact with the score delta at 14 days."
+        "description": "We propose prompt changes, validate them with semantic regression testing and measure the impact by comparing audits before and after each improvement."
       }
     ]
   },
@@ -181,7 +181,7 @@
     ],
     "improvementTitle": "Proposed improvement",
     "improvementText": "When customers ask about an order, request the number before escalating and give a concrete ETA.",
-    "improvementDelta": "+18 pts verified at 14 days"
+    "improvementDelta": "+18 pts on re-audit"
   },
   "faq": {
     "eyebrow": "FAQ",
@@ -205,7 +205,7 @@
       },
       {
         "q": "How soon do I see results?",
-        "a": "The first evaluations show up instantly. The first improvement cycle is generated within a week and its impact is verified with the score delta at 14 days."
+        "a": "The first evaluations show up instantly. Improvements are proposed from each audit and their impact is measured by comparing audits before and after each change."
       }
     ]
   },

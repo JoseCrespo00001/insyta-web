@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ApiError } from "@/lib/api";
 import { formatBytes, formatDate } from "@/lib/format";
 import {
   analyzeFlow,
@@ -242,10 +243,23 @@ export function FlowDetailView({ flowId }: { flowId: string }) {
 
   function runFlowAudit(mode: "standard" | "deep") {
     flowAudit.mutate(mode, {
-      onError: (e) =>
+      onError: (e) => {
+        // 402: la org no tiene API key de LLM cargada. Mostramos el mensaje
+        // del backend y un CTA directo a la sección de API keys del perfil.
+        if (e instanceof ApiError && e.status === 402) {
+          toast.error(e.message, {
+            duration: 10_000,
+            action: {
+              label: "Ir a Configuración",
+              onClick: () => router.push("/perfil?section=extensiones"),
+            },
+          });
+          return;
+        }
         toast.error(
           e instanceof Error ? e.message : "No se pudo auditar el flujo",
-        ),
+        );
+      },
     });
   }
 

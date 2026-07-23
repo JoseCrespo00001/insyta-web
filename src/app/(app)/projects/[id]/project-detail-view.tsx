@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
@@ -13,6 +14,7 @@ import { FlujosTab } from "./sections/flujos-tab";
 import { ResumenTab } from "./sections/resumen-tab";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ApiError } from "@/lib/api";
 import {
   useAudits,
   useConversations,
@@ -67,6 +69,7 @@ export function ProjectDetailView({
   projectId: string;
   initialTab?: string;
 }) {
+  const router = useRouter();
   // Datos reales del proyecto desde el backend.
   const { data: projects } = useProjects();
   const project = projects?.find((p) => p.publicId === projectId);
@@ -194,11 +197,25 @@ export function ProjectDetailView({
           setComposing(null);
           setTab("auditorias");
         },
-        onError: (e) =>
+        onError: (e) => {
+          // 402: la org no tiene API key de LLM cargada. Mostramos el mensaje
+          // del backend y un CTA directo a la sección de API keys del perfil.
+          if (e instanceof ApiError && e.status === 402) {
+            toast.error(e.message, {
+              id: toastId,
+              duration: 10_000,
+              action: {
+                label: "Ir a Configuración",
+                onClick: () => router.push("/perfil?section=extensiones"),
+              },
+            });
+            return;
+          }
           toast.error(
             e instanceof Error ? e.message : "No se pudo crear la auditoría",
             { id: toastId },
-          ),
+          );
+        },
       },
     );
   }

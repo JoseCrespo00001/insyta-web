@@ -31,8 +31,16 @@ const SECTIONS = [
 
 type SectionKey = (typeof SECTIONS)[number]["key"];
 
-export function PerfilView() {
-  const [section, setSection] = React.useState<SectionKey>("perfil");
+function isSectionKey(value: string | undefined): value is SectionKey {
+  return SECTIONS.some((s) => s.key === value);
+}
+
+export function PerfilView({ initialSection }: { initialSection?: string }) {
+  // `initialSection` viene de ?section= (ej: el CTA del 402 apunta a
+  // /perfil?section=extensiones, donde viven las API keys de LLM).
+  const [section, setSection] = React.useState<SectionKey>(
+    isSectionKey(initialSection) ? initialSection : "perfil",
+  );
 
   return (
     <div className="space-y-6">
@@ -164,7 +172,7 @@ const LLM_PROVIDERS = [
     key: "anthropic",
     label: "Anthropic (Claude)",
     placeholder: "sk-ant-…",
-    hint: "Más confiable para el rubric. Recomendado para la tesis.",
+    hint: "Más confiable para el rubric de evaluación. Recomendado.",
   },
   {
     key: "deepseek",

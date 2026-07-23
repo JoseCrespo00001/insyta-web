@@ -5,7 +5,7 @@ import { Check } from "lucide-react";
 const HIGHLIGHTS = [
   "Evaluación automática de cada conversación",
   "Detección de patrones y sugerencias de mejora",
-  "Impacto medido con score delta a 14 días",
+  "Impacto medido comparando auditorías antes y después",
 ];
 
 export default function AuthLayout({

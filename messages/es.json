@@ -38,7 +38,7 @@
       "pattern": "Tracking de pedido + frustración — score 31% bajo el baseline",
       "improvementLabel": "Mejora propuesta",
       "improvement": "Pedir nº de pedido antes de escalar y dar un ETA concreto.",
-      "delta": "+18 pts verificado a 14 días"
+      "delta": "+18 pts al re-auditar"
     }
   },
   "problem": {
@@ -85,7 +85,7 @@
       {
         "step": "04",
         "title": "Mejoramos y verificamos",
-        "description": "Proponemos cambios al prompt, los validamos con regresión semántica y medimos el impacto con el delta de score a 14 días."
+        "description": "Proponemos cambios al prompt, los validamos con regresión semántica y medimos el impacto comparando auditorías antes y después de cada mejora."
       }
     ]
   },
@@ -181,7 +181,7 @@
     ],
     "improvementTitle": "Propuesta de mejora",
     "improvementText": "Cuando pregunten por un pedido, pedir el número antes de escalar y dar un ETA concreto.",
-    "improvementDelta": "+18 pts verificado a 14 días"
+    "improvementDelta": "+18 pts al re-auditar"
   },
   "faq": {
     "eyebrow": "FAQ",
@@ -205,7 +205,7 @@
       },
       {
         "q": "¿En cuánto tiempo veo resultados?",
-        "a": "Las primeras evaluaciones aparecen al instante. El primer ciclo de mejora se genera en una semana y su impacto se verifica con el delta de score a los 14 días."
+        "a": "Las primeras evaluaciones aparecen al instante. Las mejoras se proponen a partir de cada auditoría y su impacto se mide comparando auditorías antes y después de cada cambio."
       }
     ]
   },

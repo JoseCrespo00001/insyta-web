@@ -80,14 +80,14 @@ const TIMELINE: TimelineItem[] = [
   {
     id: 6,
     title: "Verificar",
-    date: "14 días",
+    date: "Cada mejora",
     category: "Verificación",
     icon: BadgeCheck,
     status: "pending",
     energy: 88,
     relatedIds: [5, 1],
     content:
-      "Medimos el impacto real con el delta de score a 14 días y cerramos el loop.",
+      "Medimos el impacto comparando auditorías antes y después de cada mejora, y cerramos el loop.",
   },
 ];
 

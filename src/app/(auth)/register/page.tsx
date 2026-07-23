@@ -20,6 +20,11 @@ import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import { createClient } from "@/utils/supabase/client";
 
+// OAuth deshabilitado: los redirect URIs de Google/GitHub no están configurados
+// en el GoTrue self-host, así que los botones terminan en error. Flip a true
+// cuando los providers estén dados de alta. Email/password es el único camino.
+const OAUTH_ENABLED = false;
+
 export default function RegisterPage() {
   const router = useRouter();
   const supabase = React.useMemo(() => createClient(), []);
@@ -119,31 +124,35 @@ export default function RegisterPage() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* OAuth */}
-        <div className="space-y-2">
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => handleOAuth("google")}
-          >
-            <GoogleIcon className="h-4 w-4" />
-            Registrarse con Google
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => handleOAuth("github")}
-          >
-            <GithubIcon className="h-4 w-4" />
-            Registrarse con GitHub
-          </Button>
-        </div>
+        {/* OAuth (oculto hasta configurar providers — ver OAUTH_ENABLED) */}
+        {OAUTH_ENABLED ? (
+          <>
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => handleOAuth("google")}
+              >
+                <GoogleIcon className="h-4 w-4" />
+                Registrarse con Google
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => handleOAuth("github")}
+              >
+                <GithubIcon className="h-4 w-4" />
+                Registrarse con GitHub
+              </Button>
+            </div>
 
-        {/* Divisor */}
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="h-px flex-1 bg-border" />o
-          <span className="h-px flex-1 bg-border" />
-        </div>
+            {/* Divisor */}
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="h-px flex-1 bg-border" />o
+              <span className="h-px flex-1 bg-border" />
+            </div>
+          </>
+        ) : null}
 
         {/* Form */}
         <div className="space-y-2">

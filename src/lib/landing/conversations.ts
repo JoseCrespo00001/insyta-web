@@ -102,7 +102,7 @@ export const CONVERSATIONS: Conversation[] = [
       ],
       improvement:
         "Anclar el agente solo a la política oficial y agregar al flujo un paso que valide plazos y reintegros.",
-      delta: "+22 pts verificado a 14 días",
+      delta: "+22 pts al re-auditar",
     },
   },
   {
@@ -158,7 +158,7 @@ export const CONVERSATIONS: Conversation[] = [
       ],
       improvement:
         "No confirmar sin un ID de pedido válido; reintentar el webhook y alertar si la integración falla.",
-      delta: "+19 pts verificado a 14 días",
+      delta: "+19 pts al re-auditar",
     },
   },
   {
