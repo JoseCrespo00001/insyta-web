@@ -7,7 +7,7 @@ Next.js 15 dashboard para Insyta.
 - **Next.js 15** (App Router, React 19, Turbopack)
 - **TypeScript 5.7+**
 - **Tailwind CSS 3.4 + shadcn/ui**
-- **Supabase Auth + SSR**
+- **GoTrue autoalojado** (cliente `@supabase/ssr`)
 - **TanStack Query** para fetching
 - **react-hook-form + zod** para forms
 - **next-themes** para dark mode
@@ -20,7 +20,7 @@ npm install
 
 # 2. Configurar env
 cp .env.example .env.local
-# editar .env.local con SUPABASE_URL + SUPABASE_ANON_KEY
+# editar .env.local con NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 
 # 3. Levantar dev server
 npm run dev
